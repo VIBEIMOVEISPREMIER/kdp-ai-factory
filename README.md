@@ -116,7 +116,7 @@ kdp-factory models
 
 ## Project status
 
-The repository is under active development. The native Windows path and licensing foundation are being prepared before the official payment service and cloud deployment are finalized.
+The native Windows path, official licensing service boundary and Render deployment configuration are now included. Production payment verification still requires the final BSC secondary verification and end-to-end payment tests before real payments are accepted.
 
 ## License
 
