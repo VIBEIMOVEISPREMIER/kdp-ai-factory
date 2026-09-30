@@ -74,11 +74,31 @@ Isso evita instalar Ollama no Windows.
 
 Os modelos do ComfyUI ficam no volume comfyui_models.
 
-## GPU
+## GPU NVIDIA
 
-O stack funciona em modo CPU quando o hardware/container não expõe GPU, mas geração de imagens e modelos grandes podem ficar muito mais lentos.
+O Compose do Factory já reserva a GPU NVIDIA para **Ollama e ComfyUI**. No Windows, o Docker Desktop precisa estar usando **WSL 2** e a GPU precisa estar disponível para containers. O Docker documenta GPU-PV para NVIDIA no Windows e o Compose usa uma reserva `driver: nvidia`, `count: all`, `capabilities: [gpu]`. citeturn0search0turn0search1
 
-A aceleração NVIDIA depende do suporte de GPU do Docker Desktop/WSL2 e do driver do host. Não instale Python, Node, Ollama ou ComfyUI nativamente apenas para usar o Factory.
+Primeiro teste a GPU diretamente no Docker:
+
+~~~powershell
+docker run --rm --gpus all nvidia/cuda:12.9.0-base-ubuntu22.04 nvidia-smi
+~~~
+
+Se esse comando mostrar sua placa NVIDIA, o passthrough da GPU está funcionando. Depois recrie o Factory:
+
+~~~powershell
+docker compose down
+docker compose up -d --build
+~~~
+
+Confira o Ollama:
+
+~~~powershell
+docker compose exec ollama nvidia-smi
+docker compose logs ollama --tail=100
+~~~
+
+Não instale Python, Node, Ollama ou ComfyUI nativamente apenas para usar o Factory. O suporte GPU do Docker Desktop no Windows depende do backend WSL 2 e de drivers NVIDIA compatíveis. citeturn0search0turn0search2
 
 ## Dados persistentes
 
