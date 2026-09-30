@@ -1,6 +1,6 @@
 import {useEffect,useState} from "react";
 import {BookOpen,Brain,CheckCircle2,ChevronRight,FileText,Image as ImageIcon,Library,Plus,Settings,ShieldCheck,Sparkles,WandSparkles,Activity,Box,Upload,Download} from "lucide-react";
-const API="http://127.0.0.1:8000";
+const API="/api";
 type Project={id:string;name:string;book_type:string;language:string;status:string;progress:number};
 const types=[["childrens","🎨","Livro infantil","Histórias, personagens e ilustrações"],["fiction","📖","Romance / Ficção","Livros longos com capítulos"],["educational","📚","Educativo","Conteúdo didático"],["workbook","📝","Workbook","Exercícios e atividades"],["journal","📓","Diário / Journal","Diários e planners"],["cookbook","🍳","Livro de receitas","Receitas e conteúdo culinário"],["study","🧠","Estudo / Apostila","Resumos e questões"],["coloring","🖍️","Colorir / Atividades","Páginas para colorir"],["poetry","✒️","Poesia","Poemas e coletâneas"],["notebook","📒","Caderno","Miolo simples"],["custom","⚙️","Personalizado","Projeto livre"]];
 const stages=["brief","outline","manuscript","revision","assets","layout","cover","validation","export"];
