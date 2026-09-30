@@ -10,6 +10,7 @@ from .editorial.engine import EditorialEngine
 from .imports.engine import import_file, normalize_to_text
 from .kdp.validator import KDPValidator
 from .models.manager import ModelManager\nfrom .export.engine import ExportEngine
+from .bookflow import generate_outline, generate_manuscript, metadata
 
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
 
@@ -128,3 +129,24 @@ def export_project(project_id:str, payload:dict):
         return {"ok":True,"format":fmt,"path":str(out)}
     except HTTPException: raise
     except Exception as e: raise HTTPException(500,str(e))
+
+
+class OutlineRequest(BaseModel):
+    brief:str=Field(min_length=1)
+    chapters:int=10
+    model:str|None=None
+
+@app.post("/api/projects/{project_id}/outline")
+def create_outline(project_id:str,req:OutlineRequest):
+    try: return generate_outline(project_id,req.brief,req.chapters,req.model)
+    except Exception as e: raise HTTPException(400,str(e))
+
+@app.post("/api/projects/{project_id}/manuscript")
+def create_manuscript(project_id:str,payload:dict):
+    try: return generate_manuscript(project_id,payload["outline"],payload.get("model"))
+    except Exception as e: raise HTTPException(400,str(e))
+
+@app.post("/api/projects/{project_id}/metadata")
+def create_metadata(project_id:str,payload:dict):
+    try: return metadata(project_id,payload.get("description",""),payload.get("audience",""))
+    except Exception as e: raise HTTPException(400,str(e))
