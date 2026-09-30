@@ -9,7 +9,7 @@ from .ai.registry import registry
 from .editorial.engine import EditorialEngine
 from .imports.engine import import_file, normalize_to_text
 from .kdp.validator import KDPValidator
-from .models.manager import ModelManager
+from .models.manager import ModelManager\nfrom .export.engine import ExportEngine
 
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
 
@@ -75,8 +75,11 @@ def add_task(project_id:str,payload:dict):
 
 @app.post("/api/ai/generate")
 def generate(req:TextRequest):
-    try:\n        result=registry.text.generate(req.prompt,req.model); return {"text":result.text,"model":result.model,"raw":result.raw}
-    except Exception as e: raise HTTPException(503,str(e))
+    try:
+        result=registry.text.generate(req.prompt,req.model)
+        return {"text":result.text,"model":result.model,"raw":result.raw}
+    except Exception as e:
+        raise HTTPException(503,str(e))
 
 @app.post("/api/editorial/outline")
 def outline(req:TextRequest):
@@ -107,3 +110,21 @@ def project_import(project_id:str,req:ImportRequest):
     dest.write_bytes(src.read_bytes())
     (project_dir(project_id)/"imports"/(src.stem+".txt")).write_text(normalize_to_text(data),encoding="utf-8")
     return {"ok":True,"filename":src.name,"type":data.get("type")}
+
+
+@app.post("/api/projects/{project_id}/export")
+def export_project(project_id:str, payload:dict):
+    project=get_project(project_id)
+    if not project: raise HTTPException(404,"Projeto não encontrado")
+    chapters=payload.get("chapters",[])
+    fmt=payload.get("format","pdf").lower()
+    out=project_dir(project_id)/"exports"/f"{project_id}.{fmt}"
+    try:
+        engine=ExportEngine()
+        if fmt=="pdf": engine.pdf(chapters,out,payload.get("title",project["name"]),payload.get("author",""),project["spec"].get("trim_size","8.5x11"),project["spec"].get("bleed",False))
+        elif fmt=="docx": engine.docx(chapters,out,payload.get("title",project["name"]),payload.get("author",""))
+        elif fmt=="epub": engine.epub(chapters,out,payload.get("title",project["name"]),project["language"])
+        else: raise HTTPException(400,"Formato de exportação inválido.")
+        return {"ok":True,"format":fmt,"path":str(out)}
+    except HTTPException: raise
+    except Exception as e: raise HTTPException(500,str(e))
