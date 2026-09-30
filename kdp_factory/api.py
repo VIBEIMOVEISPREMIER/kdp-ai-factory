@@ -12,6 +12,8 @@ from .kdp.validator import KDPValidator
 from .models.manager import ModelManager
 from .export.engine import ExportEngine
 from .bookflow import generate_outline, generate_manuscript, metadata
+from .licensing.client import status as license_status, activate_with_license
+from .licensing.models import LicenseActivationRequest
 
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
 
@@ -57,9 +59,25 @@ def project(project_id:str):
     if not p: raise HTTPException(404,"Projeto não encontrado")
     return p
 
+@app.get("/api/license")
+def license():
+    return license_status()
+
+
+@app.post("/api/license/activate")
+def activate_license(payload: LicenseActivationRequest):
+    try:
+        return activate_with_license(payload.license_token)
+    except Exception as e:
+        raise HTTPException(400, str(e))
+
+
 @app.post("/api/projects")
 def new_project(payload:ProjectCreate):
-    return create_project(payload.name,payload.book_type,payload.language)
+    try:
+        return create_project(payload.name,payload.book_type,payload.language)
+    except PermissionError as e:
+        raise HTTPException(402, str(e))
 
 @app.patch("/api/projects/{project_id}")
 def patch_project(project_id:str,payload:dict):
