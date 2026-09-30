@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: kdp-ai-factory-license
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn apps.license_server.app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: KDP_PAYMENT_NETWORK
+        value: BSC
+      - key: KDP_PAYMENT_ADDRESS
+        value: 0x09fa433f8df884356bbb8a1afe1fb11bea3e12e5
+      - key: KDP_PAYMENT_PRICE_USD
+        value: "50"
+      - key: BYBIT_BASE_URL
+        value: https://api.bybit.com
+      - key: BYBIT_API_KEY
+        sync: false
+      - key: BYBIT_API_SECRET
+        sync: false
+      - key: KDP_LICENSE_PRIVATE_KEY_B64
+        sync: false
