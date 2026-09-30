@@ -2,68 +2,103 @@
 
 A local-first, open-source AI publishing platform designed to help users create, edit, illustrate, format, validate, and prepare books for Amazon KDP.
 
-## Vision
+## Visão
 
-KDP AI Factory is not just a coloring-book generator. It is an extensible editorial automation system for fiction, children's books, educational books, study guides, workbooks, journals, notebooks, activity books, cookbooks, poetry, and custom publishing projects.
+O KDP AI Factory não é apenas um gerador de livros de colorir. Ele foi projetado como uma fábrica editorial modular para livros infantis, ficção, educativos, apostilas, workbooks, diários, planners, cadernos, receitas, poesia, atividades e projetos personalizados.
 
-## Core principles
+## Princípios
 
-- Local-first processing whenever possible
-- No mandatory paid AI APIs
-- No artificial image-credit limits
-- Multiple local AI models
-- Multi-language architecture
-- Beginner-friendly visual dashboard
-- PowerShell/CLI for advanced users
-- Resumable projects and task queues
-- KDP-oriented validation and export
-- Clear documentation from installation to publication
-- Modular architecture so AI providers and models can be replaced
+- Docker-first: execução encapsulada em containers.
+- Sem instalação nativa obrigatória de Python, Node, Ollama ou ComfyUI.
+- IA local sempre que possível.
+- Sem API paga de IA obrigatória.
+- Sem créditos artificiais para geração de imagens.
+- Múltiplos modelos locais.
+- Arquitetura multilíngue.
+- Dashboard visual para iniciantes e CLI para uso avançado.
+- Projetos persistentes e checkpoints.
+- Validação e exportação orientadas ao KDP.
+- Arquitetura modular para trocar modelos e provedores.
 
-## Project status
+## Status
 
-🚧 Early development — architecture and foundation.
+🚧 Em desenvolvimento ativo — núcleo 1.0 e infraestrutura Docker-first já estruturados.
 
-## Planned stack
+## Execução recomendada no Windows
 
-- Web dashboard: React + TypeScript
-- Backend/core: Python
-- Local text inference: Ollama-compatible models
-- Local image workflows: ComfyUI-compatible workflows
-- Documents: PDF/EPUB generation and validation
-- Project storage: SQLite initially, with an upgrade path
-- CLI: cross-platform command interface
-- CI/CD: GitHub Actions
+O fluxo normal usa somente Docker Desktop no host.
 
-## Important
+~~~powershell
+docker compose up -d --build
+~~~
 
-KDP AI Factory does not assume a public Amazon KDP publishing API exists. Publication automation will be isolated behind a connector so the rest of the system remains independent of Amazon's interface.
+Depois abra:
 
-## License
+**http://localhost:8080**
 
-License will be defined before the first public release.
+Ou use o script:
 
+~~~powershell
+.\scripts\docker-up.ps1
+~~~
 
-## Status atual
+Para parar:
 
-O núcleo 1.0 já está implementado: projetos persistentes, pipeline editorial, Ollama, ComfyUI por workflow, importadores, editorial engine, PDF/DOCX/EPUB, capa, metadados, validação KDP, checkpoints, CLI, API, dashboard e CI.
+~~~powershell
+docker compose down
+~~~
 
-### Inicialização rápida no Windows
+Para logs:
 
-```powershell
-.scriptsinstall.ps1
-.scriptsstart.ps1
-```
+~~~powershell
+docker compose logs -f
+~~~
 
-Dashboard:
-```powershell
-.scriptsstart-dashboard.ps1
-```
+Documentação completa: [docs/DOCKER.md](docs/DOCKER.md)
 
-Diagnóstico:
-```powershell
-..venvScriptskdp-factory.exe doctor
-..venvScriptskdp-factory.exe models
-```
+## Arquitetura Docker
 
-A geração local de texto usa Ollama. A geração local de imagens usa ComfyUI quando configurado. Nenhum modelo pesado é baixado silenciosamente.
+- **dashboard** — React + TypeScript + Vite, servido por Nginx.
+- **api** — FastAPI + motor editorial Python.
+- **ollama** — servidor de modelos locais de texto.
+- **comfyui** — engine local de geração visual.
+- **volumes Docker** — banco, projetos, modelos e resultados persistem fora do ciclo de vida dos containers.
+
+O navegador conversa com o dashboard em localhost. O Nginx faz o proxy interno de /api para o FastAPI.
+
+## IA local
+
+Ollama é usado para texto e ComfyUI para workflows visuais. Os pesos dos modelos são grandes e, por isso, não são embutidos no código do projeto.
+
+Exemplo para instalar um modelo no container Ollama:
+
+~~~powershell
+docker compose exec ollama ollama pull llama3.2
+~~~
+
+Nenhuma instalação nativa do Ollama é necessária.
+
+A aceleração por GPU é opcional e depende do suporte de GPU do Docker Desktop/WSL2 e do driver do host.
+
+## Stack
+
+- Web: React + TypeScript
+- Backend/core: Python + FastAPI
+- Texto local: Ollama
+- Imagens locais: ComfyUI
+- Documentos: PDF/EPUB/DOCX
+- Banco: SQLite inicialmente
+- CLI: Typer
+- CI: GitHub Actions
+
+## Importante sobre publicação KDP
+
+O projeto prepara conteúdo, arquivos, metadados e validações para o fluxo KDP. A publicação automática fica isolada porque a disponibilidade e as regras da interface da Amazon podem mudar; o sistema não depende de uma suposta API pública de publicação completa.
+
+## Desenvolvimento nativo
+
+Os scripts de instalação nativa permanecem para desenvolvedores que quiserem trabalhar fora dos containers. Eles não fazem parte do caminho recomendado para uso normal.
+
+## Licença
+
+A licença final será definida antes da primeira versão pública.
