@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+.npm/
+dist/
+build/
+.next/
+coverage/
+
+# Local configuration
+.env
+.env.*
+!.env.example
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated projects and outputs
+data/
+projects/
+outputs/
+artifacts/
+generated/
+tmp/
+
+# AI model files
+models/
+checkpoints/
+*.safetensors
+*.ckpt
+*.gguf
+*.bin
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
