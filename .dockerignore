@@ -1,0 +1,21 @@
+# Git
+.git
+.github
+# Python
+__pycache__
+*.py[cod]
+.pytest_cache
+.venv
+venv
+# Node
+node_modules
+apps/dashboard/dist
+npm-debug.log*
+# Runtime
+data
+*.sqlite3
+# Editor / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
