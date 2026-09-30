@@ -42,3 +42,28 @@ KDP AI Factory does not assume a public Amazon KDP publishing API exists. Public
 ## License
 
 License will be defined before the first public release.
+
+
+## Status atual
+
+O núcleo 1.0 já está implementado: projetos persistentes, pipeline editorial, Ollama, ComfyUI por workflow, importadores, editorial engine, PDF/DOCX/EPUB, capa, metadados, validação KDP, checkpoints, CLI, API, dashboard e CI.
+
+### Inicialização rápida no Windows
+
+```powershell
+.scriptsinstall.ps1
+.scriptsstart.ps1
+```
+
+Dashboard:
+```powershell
+.scriptsstart-dashboard.ps1
+```
+
+Diagnóstico:
+```powershell
+..venvScriptskdp-factory.exe doctor
+..venvScriptskdp-factory.exe models
+```
+
+A geração local de texto usa Ollama. A geração local de imagens usa ComfyUI quando configurado. Nenhum modelo pesado é baixado silenciosamente.
