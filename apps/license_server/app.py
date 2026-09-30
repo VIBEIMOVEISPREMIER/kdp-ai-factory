@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-from .service import LicenseService
+from .licensing_service import LicenseService
 
 app = FastAPI(title="KDP AI Factory License Server", version="1.0.0")
 service = LicenseService()
