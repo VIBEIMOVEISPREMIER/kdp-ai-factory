@@ -75,7 +75,7 @@ def add_task(project_id:str,payload:dict):
 
 @app.post("/api/ai/generate")
 def generate(req:TextRequest):
-    try: return registry.text.generate(req.prompt,req.model).raw | {"text":registry.text.generate(req.prompt,req.model).text}
+    try:\n        result=registry.text.generate(req.prompt,req.model); return {"text":result.text,"model":result.model,"raw":result.raw}
     except Exception as e: raise HTTPException(503,str(e))
 
 @app.post("/api/editorial/outline")
