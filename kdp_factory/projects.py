@@ -5,12 +5,14 @@ import json
 from .config import PROJECTS_DIR, ensure_dirs
 from .db import connect
 from .books.templates import template_for
+from .licensing.client import assert_can_create_book, register_book_created
 
 def now(): return datetime.now(timezone.utc).isoformat()
 
 def project_dir(project_id:str)->Path: return PROJECTS_DIR/project_id
 
 def create_project(name:str, book_type:str, language:str, **overrides):
+    assert_can_create_book()
     ensure_dirs(); pid=str(uuid4()); stamp=now(); folder=project_dir(pid)
     for d in ("manuscript","images","exports","logs","imports","cover","validation"): (folder/d).mkdir(exist_ok=True)
     tpl=template_for(book_type)
@@ -21,6 +23,7 @@ def create_project(name:str, book_type:str, language:str, **overrides):
     (folder/"checkpoints.json").write_text("[]",encoding="utf-8")
     with connect() as db:
         db.execute("INSERT INTO projects VALUES (?, ?, ?, ?, 'created', 0, ?, ?)",(pid,name,book_type,language,stamp,stamp))
+    register_book_created()
     return manifest
 
 def get_project(project_id:str):
