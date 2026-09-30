@@ -51,48 +51,57 @@ The official client permits one free book per installation/machine.
 
 After that, the official edition requires a lifetime license. The licensing layer uses a hashed machine fingerprint and a remote licensing service.
 
+The public repository contains the application and license-verification client. The production licensing/payment implementation belongs in a separate private repository. See [docs/LICENSE_ARCHITECTURE.md](docs/LICENSE_ARCHITECTURE.md).
+
 Important: open-source software cannot technically prevent a third party from modifying its own fork. The protection therefore applies to the official build and official license service. Private signing keys and payment-provider credentials must never be committed to GitHub.
 
 Read [docs/LICENSING.md](docs/LICENSING.md).
 
 ## Payments
 
-The planned official payment flow supports USDT on BNB Smart Chain (BSC), BNB on BNB Smart Chain, and a lifetime license price of US$50.
+The official payment flow supports USDT on BNB Smart Chain (BSC), BNB on BNB Smart Chain, and a lifetime license price of US$50.
 
 Official receiving address:
 
 0x09fa433f8df884356bbb8a1afe1fb11bea3e12e5
 
-Payment verification will validate the network, asset, destination address, amount, transaction hash and blockchain confirmation before issuing a license.
+Payment verification must validate the network, asset, destination address, amount, transaction hash, uniqueness and blockchain confirmation before issuing a license.
 
 Bybit API credentials are server-only secrets. They are never shipped to clients.
 
 ## Architecture
 
 ~~~text
-Windows client
+PUBLIC GITHUB REPOSITORY
    |
    +-- Dashboard / FastAPI
    +-- Editorial engine
    +-- Import / export
    +-- KDP validator
    +-- Optional Ollama
-   +-- Optional ComfyUI
+   +-- License client
+   +-- Public-key verification
    |
-   +-- Official licensing service
-          |
-          +-- License database
-          +-- Payment verification
-          +-- BSC on-chain verification
-          +-- Bybit deposit verification
-          +-- Digital license signing
+   +------------------------------+
+                                  |
+                                  v
+PRIVATE OFFICIAL REPOSITORY
+   |
+   +-- License API
+   +-- Trial database
+   +-- Payment verification
+   +-- BSC secondary verification
+   +-- Bybit integration
+   +-- License database
+   +-- Private signing key
+   +-- Production secrets
 ~~~
 
 ## Security
 
 Do not commit Bybit API keys, Bybit API secrets, private signing keys, production database credentials or server environment files.
 
-Use environment variables and secret storage on the licensing server.
+Use environment variables and secret storage on the private licensing server.
 
 ## Development
 
@@ -116,7 +125,9 @@ kdp-factory models
 
 ## Project status
 
-The native Windows path, official licensing service boundary and Render deployment configuration are now included. Production payment verification still requires the final BSC secondary verification and end-to-end payment tests before real payments are accepted.
+The native Windows path, public licensing client, official licensing API boundary and Render deployment configuration are included.
+
+The production payment verifier still requires the private server implementation, final BSC secondary verification and end-to-end payment tests before real payments are accepted.
 
 ## License
 
