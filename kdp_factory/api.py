@@ -9,7 +9,8 @@ from .ai.registry import registry
 from .editorial.engine import EditorialEngine
 from .imports.engine import import_file, normalize_to_text
 from .kdp.validator import KDPValidator
-from .models.manager import ModelManager\nfrom .export.engine import ExportEngine
+from .models.manager import ModelManager
+from .export.engine import ExportEngine
 from .bookflow import generate_outline, generate_manuscript, metadata
 
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
