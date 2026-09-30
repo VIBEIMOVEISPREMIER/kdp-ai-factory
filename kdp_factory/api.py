@@ -15,32 +15,32 @@ from .bookflow import generate_outline,generate_manuscript,metadata
 from .licensing.client import status as license_status,activate_with_license,verify_payment_and_issue_license
 from .licensing.models import LicenseActivationRequest
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
-class ProjectCreate(BaseModel):name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR"
-class TextRequest(BaseModel):prompt:str=Field(min_length=1);model:str|None=None
-class ImportRequest(BaseModel):path:str
-class ValidateRequest(BaseModel):spec:dict;pdf_path:str|None=None
-class CheckpointRequest(BaseModel):stage:str;state:dict={}
-class PaymentRequest(BaseModel):tx_id:str=Field(min_length=20,max_length=200);asset:str=Field(pattern=r"^(USDT|BNB)$")
+class ProjectCreate(BaseModel): name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR"
+class TextRequest(BaseModel): prompt:str=Field(min_length=1);model:str|None=None
+class ImportRequest(BaseModel): path:str
+class ValidateRequest(BaseModel): spec:dict;pdf_path:str|None=None
+class CheckpointRequest(BaseModel): stage:str;state:dict={}
+class PaymentRequest(BaseModel): tx_id:str=Field(min_length=20,max_length=200);asset:str=Field(pattern=r"^(USDT|BNB)$")
 @app.on_event("startup")
-def startup():init_db()
+def startup(): init_db()
 @app.get("/api/health")
-def health():return {"ok":True,"service":"kdp-ai-factory","version":"1.0.0"}
+def health(): return {"ok":True,"service":"kdp-ai-factory","version":"1.0.0"}
 @app.get("/api/doctor")
-def doctor():return run_doctor()
+def doctor(): return run_doctor()
 @app.get("/api/ai")
-def ai_status():return registry.status()
+def ai_status(): return registry.status()
 @app.get("/api/models")
 def models():
  m=ModelManager();return {"hardware":m.hardware(),"ollama":m.ollama_models(),"recommended":m.recommendations()}
 @app.get("/api/projects")
-def projects():return list_projects()
+def projects(): return list_projects()
 @app.get("/api/projects/{project_id}")
 def project(project_id:str):
  p=get_project(project_id)
- if not p:raise HTTPException(404,"Projeto não encontrado")
+ if not p: raise HTTPException(404,"Projeto não encontrado")
  return p
 @app.get("/api/license")
-def license():return license_status()
+def license(): return license_status()
 @app.post("/api/license/activate")
 def activate_license(payload:LicenseActivationRequest):
  try:return activate_with_license(payload.license_token)
@@ -59,7 +59,7 @@ def patch_project(project_id:str,payload:dict):
  if not p:raise HTTPException(404,"Projeto não encontrado")
  return p
 @app.get("/api/projects/{project_id}/tasks")
-def tasks(project_id:str):return list_tasks(project_id)
+def tasks(project_id:str): return list_tasks(project_id)
 @app.post("/api/projects/{project_id}/tasks")
 def add_task(project_id:str,payload:dict):
  if not get_project(project_id):raise HTTPException(404,"Projeto não encontrado")
@@ -85,3 +85,23 @@ def save_checkpoint(project_id:str,req:CheckpointRequest):
 def validate(req:ValidateRequest):
  issues=KDPValidator().validate_pdf(req.pdf_path,req.spec) if req.pdf_path else KDPValidator().validate_spec(req.spec)
  return {"ok":not any(x.level=="error" for x in issues),"issues":[x.__dict__ for x in issues]}
+@app.post("/api/projects/{project_id}/import")
+def project_import(project_id:str,req:ImportRequest):
+ p=get_project(project_id)
+ if not p:raise HTTPException(404,"Projeto não encontrado")
+ data=import_file(req.path);src=Path(req.path);dest=project_dir(project_id)/"imports"/src.name;dest.write_bytes(src.read_bytes())
+ (project_dir(project_id)/"imports"/(src.stem+".txt")).write_text(normalize_to_text(data),encoding="utf-8")
+ return {"ok":True,"filename":src.name,"type":data.get("type")}
+class OutlineRequest(BaseModel): brief:str=Field(min_length=1);chapters:int=10;model:str|None=None
+@app.post("/api/projects/{project_id}/outline")
+def create_outline(project_id:str,req:OutlineRequest):
+ try:return generate_outline(project_id,req.brief,req.chapters,req.model)
+ except Exception as e:raise HTTPException(400,str(e))
+@app.post("/api/projects/{project_id}/manuscript")
+def create_manuscript(project_id:str,payload:dict):
+ try:return generate_manuscript(project_id,payload["outline"],payload.get("model"))
+ except Exception as e:raise HTTPException(400,str(e))
+@app.post("/api/projects/{project_id}/metadata")
+def create_metadata(project_id:str,payload:dict):
+ try:return metadata(project_id,payload.get("description",""),payload.get("audience",""))
+ except Exception as e:raise HTTPException(400,str(e))
