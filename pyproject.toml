@@ -8,24 +8,11 @@ version = "1.0.0"
 description = "Local-first AI publishing factory for creating, formatting, validating and preparing books for Amazon KDP."
 requires-python = ">=3.11"
 dependencies = [
-  "fastapi>=0.115,<1",
-  "uvicorn[standard]>=0.30,<1",
-  "pydantic>=2.8,<3",
-  "typer>=0.12,<1",
-  "httpx>=0.27,<1",
-  "psutil>=6,<7",
-  "reportlab>=4.2,<5",
-  "pymupdf>=1.24,<2",
-  "python-docx>=1.1,<2",
-  "python-pptx>=1.0,<2",
-  "ebooklib>=0.18,<1",
-  "beautifulsoup4>=4.12,<5",
-  "Pillow>=10,<12"
+  "fastapi>=0.115,<1","uvicorn[standard]>=0.30,<1","pydantic>=2.8,<3","typer>=0.12,<1","httpx>=0.27,<1","psutil>=6,<7",
+  "reportlab>=4.2,<5","pymupdf>=1.24,<2","python-docx>=1.1,<2","python-pptx>=1.0,<2","ebooklib>=0.18,<1","beautifulsoup4>=4.12,<5","Pillow>=10,<12"
 ]
-
 [project.scripts]
 kdp-factory = "kdp_factory.cli:app"
-
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["kdp_factory*"]
