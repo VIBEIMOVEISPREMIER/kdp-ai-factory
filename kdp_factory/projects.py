@@ -2,6 +2,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 import json
+import os
+import shutil
 
 from .config import PROJECTS_DIR, ensure_dirs
 from .db import connect
@@ -13,7 +15,18 @@ def now():
     return datetime.now(timezone.utc).isoformat()
 
 
-def project_dir(project_id: str) -> Path:
+def _safe_json_write(path: Path, data):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    backup = path.with_suffix(path.suffix + ".bak")
+    text = json.dumps(data, indent=2, ensure_ascii=False)
+    tmp.write_text(text, encoding="utf-8")
+    if path.exists():
+        shutil.copy2(path, backup)
+    os.replace(tmp, path)
+
+
+def project_dir(project_id: str):
     return PROJECTS_DIR / project_id
 
 
@@ -44,13 +57,9 @@ def create_project(name: str, book_type: str, language: str, **overrides):
         "spec": spec,
     }
 
-    (folder / "project.json").write_text(
-        json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
-    (folder / "book_spec.json").write_text(
-        json.dumps(spec, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
-    (folder / "checkpoints.json").write_text("[]", encoding="utf-8")
+    _safe_json_write(folder / "project.json", manifest)
+    _safe_json_write(folder / "book_spec.json", spec)
+    _safe_json_write(folder / "checkpoints.json", [])
 
     with connect() as db:
         db.execute(
@@ -79,7 +88,7 @@ def update_project(project_id: str, **changes):
     data["version"] = int(data.get("version", 1)) + 1
 
     p = project_dir(project_id) / "project.json"
-    p.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    _safe_json_write(p, data)
 
     with connect() as db:
         fields = []
@@ -102,7 +111,7 @@ def checkpoint(project_id: str, stage: str, state: dict):
     p = project_dir(project_id) / "checkpoints.json"
     items = json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
     items.append({"stage": stage, "timestamp": now(), "state": state})
-    p.write_text(json.dumps(items, indent=2, ensure_ascii=False), encoding="utf-8")
+    _safe_json_write(p, items)
     return items[-1]
 
 
