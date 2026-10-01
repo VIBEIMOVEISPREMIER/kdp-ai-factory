@@ -2,10 +2,12 @@ services:
   kdp-engine:
     build:
       context: ./engine
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       KDP_ENGINE_TOKEN: ${KDP_ENGINE_TOKEN}
-      OLLAMA_URL: ${OLLAMA_URL:-http://127.0.0.1:11434}
-      COMFYUI_URL: ${COMFYUI_URL:-http://127.0.0.1:8188}
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      COMFYUI_URL: ${COMFYUI_URL:-http://host.docker.internal:8188}
     ports:
       - "${KDP_ENGINE_PORT:-8189}:8189"
     restart: unless-stopped
