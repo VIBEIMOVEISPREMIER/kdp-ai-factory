@@ -13,6 +13,14 @@ def enabled() -> bool:
     return bool(os.getenv("DATABASE_URL", "").strip())
 
 
+def persistence_status() -> dict:
+    if not enabled():
+        return {"enabled": False, "backend": "local"}
+    with connect() as db:
+        row = execute(db, "SELECT COUNT(*) AS count FROM kdp_factory_projects").fetchone()
+    return {"enabled": True, "backend": "neon-postgres", "project_archives": int(row["count"])}
+
+
 def persist_project(project_id: str) -> None:
     if not enabled():
         return
