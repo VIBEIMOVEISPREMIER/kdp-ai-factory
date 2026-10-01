@@ -122,10 +122,9 @@ def _run_desktop() -> None:
 
 
 if __name__ == "__main__":
-    # The desktop GUI is intentionally Windows-only. On Linux/macOS, run the
-    # local API in headless mode so CI and server environments never try to
-    # load GTK/Qt through pywebview.
-    if sys.platform == "win32" and len(sys.argv) == 1:
+    # Use the native desktop window on Windows and on Linux when a graphical
+    # session is available. CI/headless Linux remains API-only.
+    if len(sys.argv) == 1 and (sys.platform == "win32" or os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
         _run_desktop()
     elif len(sys.argv) == 1:
         _run_server_only()
