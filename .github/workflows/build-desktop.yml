@@ -35,7 +35,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pyinstaller
+          pip install pytest pyinstaller
+      - name: Test Python
+        run: |
+          python -m compileall -q kdp_factory
+          python -m pytest -q
+
       - name: Build Windows EXE
         run: |
           pyinstaller --noconfirm --clean --onefile --noconsole --name KDP-AI-Factory-Windows --paths . --hidden-import kdp_factory.cli --add-data "kdp_factory/static;kdp_factory/static" --collect-all kdp_factory packaging/launcher.py
@@ -80,13 +85,33 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pyinstaller
+          pip install pytest pyinstaller
+      - name: Test Python
+        run: |
+          python -m compileall -q kdp_factory
+          python -m pytest -q
+
       - name: Build Linux executable
         run: |
           pyinstaller --noconfirm --clean --onefile --name KDP-AI-Factory-Linux --paths . --hidden-import kdp_factory.cli --add-data "kdp_factory/static:kdp_factory/static" --collect-all kdp_factory packaging/launcher.py
           test -f dist/KDP-AI-Factory-Linux
           chmod +x dist/KDP-AI-Factory-Linux
-          dist/KDP-AI-Factory-Linux --help
+          ./dist/KDP-AI-Factory-Linux > /tmp/kdp-ai-factory.log 2>&1 &
+          pid=$!
+          trap 'kill $pid 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:8000/api/health >/tmp/kdp-health.json; then
+              grep -q '"ok":true' /tmp/kdp-health.json
+              exit 0
+            fi
+            if ! kill -0 $pid 2>/dev/null; then
+              cat /tmp/kdp-ai-factory.log
+              exit 1
+            fi
+            sleep 1
+          done
+          cat /tmp/kdp-ai-factory.log
+          exit 1
       - name: Upload Linux build
         uses: actions/upload-artifact@v4
         with:
