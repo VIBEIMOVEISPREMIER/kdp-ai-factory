@@ -51,7 +51,7 @@ jobs:
 
       - name: Build executable
         run: |
-          pyinstaller --noconfirm --clean --onefile --windowed --name KDP-AI-Factory kdp_factory/desktop.py
+          pyinstaller --noconfirm --clean --onefile --windowed --name KDP-AI-Factory --add-data "kdp_factory/static;kdp_factory/static" kdp_factory/desktop.py
           .\dist\KDP-AI-Factory.exe --compatibility-check
 
       - name: Install Inno Setup
