@@ -74,8 +74,18 @@ def _serve() -> None:
         logging.exception("Local API server stopped unexpectedly")
 
 
+def _run_server_only() -> None:
+    """Headless mode used by Linux CI and server environments.
+
+    Linux builds must not initialize pywebview because GitHub Actions runners
+    have no GTK/Qt desktop session. The API is still fully testable here.
+    """
+    logging.info("Starting KDP AI Factory in headless/server mode")
+    init_db()
+    _serve()
+
+
 def _run_desktop() -> None:
-    server_thread = None
     try:
         logging.info("Starting KDP AI Factory desktop")
         init_db()
@@ -90,8 +100,8 @@ def _run_desktop() -> None:
 
         logging.info("Local API/dashboard ready at %s", URL)
 
-        # The Windows app is a native desktop window. It never opens the SaaS URL
-        # and never downloads the web application. The bundled dashboard is served
+        # Windows is a native desktop app. It never opens the SaaS URL and
+        # never downloads the web application. The bundled dashboard is served
         # only by the local FastAPI process.
         import webview
 
@@ -112,7 +122,12 @@ def _run_desktop() -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 1:
+    # The desktop GUI is intentionally Windows-only. On Linux/macOS, run the
+    # local API in headless mode so CI and server environments never try to
+    # load GTK/Qt through pywebview.
+    if sys.platform == "win32" and len(sys.argv) == 1:
         _run_desktop()
+    elif len(sys.argv) == 1:
+        _run_server_only()
     else:
         app()
