@@ -20,41 +20,62 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+
       - name: Build dashboard
         working-directory: apps/dashboard
         run: |
           npm install
           npm run build
+
       - name: Bundle dashboard
         shell: pwsh
         run: |
           if (Test-Path kdp_factory/static) { Remove-Item -Recurse -Force kdp_factory/static }
           New-Item -ItemType Directory -Force kdp_factory/static | Out-Null
           Copy-Item -Recurse apps/dashboard/dist/* kdp_factory/static/
+
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pyinstaller
+          pip install pyinstaller
+
       - name: Test Python
         run: |
           python -m compileall -q kdp_factory
           python -m pytest -q
 
       - name: Build Windows EXE
+        shell: pwsh
         run: |
-          pyinstaller --noconfirm --clean --onefile --noconsole --name KDP-AI-Factory-Windows --paths . --hidden-import kdp_factory.cli --add-data "kdp_factory/static;kdp_factory/static" --collect-all kdp_factory packaging/launcher.py
+          pyinstaller --noconfirm --clean --onefile --noconsole --name KDP-AI-Factory-Windows --paths . --hidden-import kdp_factory.cli --hidden-import webview.platforms.edgechromium --collect-all webview --add-data "kdp_factory/static;kdp_factory/static" --collect-all kdp_factory packaging/launcher.py
           if (!(Test-Path dist/KDP-AI-Factory-Windows.exe)) { throw "Windows EXE was not created." }
+
+      - name: Smoke test Windows local API
+        shell: pwsh
+        run: |
+          $env:KDP_FACTORY_PORT = "8000"
           $p = Start-Process -FilePath "dist/KDP-AI-Factory-Windows.exe" -PassThru
           try {
-            Start-Sleep -Seconds 5
-            $response = Invoke-WebRequest -Uri "http://127.0.0.1:8000/" -UseBasicParsing -TimeoutSec 10
-            if ($response.StatusCode -lt 200 -or $response.StatusCode -ge 500) {
-              throw "Windows EXE smoke test returned HTTP $($response.StatusCode)."
+            $ok = $false
+            for ($i = 0; $i -lt 30; $i++) {
+              try {
+                $health = Invoke-WebRequest -Uri "http://127.0.0.1:8000/api/health" -UseBasicParsing -TimeoutSec 3
+                if ($health.StatusCode -eq 200 -and $health.Content -match '"ok"\s*:\s*true') { $ok = $true; break }
+              } catch {}
+              if ($p.HasExited) { throw "Windows EXE exited during smoke test." }
+              Start-Sleep -Seconds 1
             }
+            if (!$ok) { throw "Windows EXE local API did not become healthy." }
+
+            $root = Invoke-WebRequest -Uri "http://127.0.0.1:8000/" -UseBasicParsing -TimeoutSec 10
+            if ($root.StatusCode -ne 200) { throw "Dashboard returned HTTP $($root.StatusCode)." }
+            if ($root.Content -notmatch "KDP AI Factory") { throw "Bundled dashboard HTML was not served." }
+            if ($root.Content -match "kdp-ai-factory-license-server|onrender.com") { throw "Desktop build is pointing at the remote SaaS/license website." }
           } finally {
             if (!$p.HasExited) { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
           }
+
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
@@ -85,15 +106,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pyinstaller
+          pip install pyinstaller
       - name: Test Python
         run: |
           python -m compileall -q kdp_factory
           python -m pytest -q
-
       - name: Build Linux executable
         run: |
-          pyinstaller --noconfirm --clean --onefile --name KDP-AI-Factory-Linux --paths . --hidden-import kdp_factory.cli --add-data "kdp_factory/static:kdp_factory/static" --collect-all kdp_factory packaging/launcher.py
+          pyinstaller --noconfirm --clean --onefile --name KDP-AI-Factory-Linux --paths . --hidden-import kdp_factory.cli --hidden-import webview.platforms.gtk --collect-all webview --add-data "kdp_factory/static:kdp_factory/static" --collect-all kdp_factory packaging/launcher.py
           test -f dist/KDP-AI-Factory-Linux
           chmod +x dist/KDP-AI-Factory-Linux
           ./dist/KDP-AI-Factory-Linux > /tmp/kdp-ai-factory.log 2>&1 &
