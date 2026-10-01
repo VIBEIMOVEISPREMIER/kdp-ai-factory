@@ -6,8 +6,7 @@ class Registry:
         self.text=self.router
         self.image=self.router
     def configure_remote(self,url:str,token:str=""):
-        # Mantido por compatibilidade; o router local continua prioritário.
-        return None
+        self.router.configure_remote(url,token)
     def status(self):
         return self.router.status()
 registry=Registry()
