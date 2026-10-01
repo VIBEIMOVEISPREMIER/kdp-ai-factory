@@ -2,11 +2,11 @@ from __future__ import annotations
 import json, uuid
 from pathlib import Path
 from .models import Manuscript, Chapter
-from ..ai.ollama import OllamaProvider
+from ..ai.registry import registry
 
 class EditorialEngine:
     def __init__(self, provider=None):
-        self.provider=provider or OllamaProvider()
+        self.provider=provider or registry.router
     def outline(self, brief:str, chapters:int=10, model:str|None=None)->dict:
         prompt=f"Crie uma estrutura editorial profissional para um livro. Briefing:\n{brief}\nQuantidade aproximada de capítulos: {chapters}. Responda em JSON com title e chapters, cada capítulo com title e purpose."
         raw=self.provider.generate(prompt,model).text
