@@ -9,6 +9,7 @@ from .config import PROJECTS_DIR, ensure_dirs
 from .db import connect
 from .books.templates import template_for
 from .licensing.client import assert_can_create_book, register_book_created
+from .web_persistence import persist_project
 
 
 def now():
@@ -68,6 +69,7 @@ def create_project(name: str, book_type: str, language: str, **overrides):
         )
 
     register_book_created()
+    persist_project(pid)
     return manifest
 
 
@@ -112,6 +114,7 @@ def update_project(project_id: str, **changes):
                 values,
             )
 
+    persist_project(project_id)
     return data
 
 
@@ -120,6 +123,7 @@ def checkpoint(project_id: str, stage: str, state: dict):
     items = json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
     items.append({"stage": stage, "timestamp": now(), "state": state})
     _safe_json_write(p, items)
+    persist_project(project_id)
     return items[-1]
 
 
