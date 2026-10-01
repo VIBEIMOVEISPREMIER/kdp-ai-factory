@@ -69,6 +69,48 @@ def delete_ai_provider(provider_id:str):
         raise HTTPException(404,"Provedor não encontrado")
     return {"ok":True}
 
+@app.post("/api/ai/providers/test")
+def test_ai_provider(payload:dict):
+    provider_id=str(payload.get("provider_id","")).strip()
+    cfg=__import__("kdp_factory.ai.user_providers",fromlist=["get_provider"]).get_provider(provider_id)
+    if not cfg: raise HTTPException(404,"Provedor não encontrado")
+    kind=cfg.get("kind","text")
+    try:
+        if kind in ("video",):
+            return {"ok":True,"kind":"video","message":"Configuração válida. O teste completo será feito na primeira geração."}
+        if kind in ("image",):
+            return {"ok":True,"kind":"image","message":"Configuração válida. O teste completo será feito na primeira geração."}
+        result=registry.router.text("Responda somente: OK", model=cfg.get("model"))
+        return {"ok":True,"kind":"text","model":result.model,"message":"API respondeu corretamente."}
+    except Exception as e:
+        raise HTTPException(502,str(e))
+
+@app.get("/api/video-providers")
+def video_providers():
+    return [p for p in list_ai_providers() if p.get("kind") in ("video","all")]
+
+@app.post("/api/projects/{project_id}/video")
+def generate_project_video(project_id:str,payload:dict):
+    project=get_project(project_id)
+    if not project: raise HTTPException(404,"Projeto não encontrado")
+    provider_id=str(payload.get("provider_id","")).strip()
+    prompt=str(payload.get("prompt","")).strip()
+    if not prompt:
+        spec=project.get("spec") or {}
+        prompt=f"Crie um vídeo vertical de divulgação para o livro '{project.get('name','')}'. Tema: {spec.get('subject','')}. Idioma: {project.get('language','pt-BR')}. Mostre atmosfera, personagens/elementos visuais e chamada para conhecer o livro, sem inventar informações que não estejam no projeto."
+    try:
+        from .ai.user_providers import get_provider, UserVideoAPIProvider
+        cfg=get_provider(provider_id) if provider_id else None
+        if not cfg or cfg.get("kind") not in ("video","all"):
+            raise HTTPException(400,"Selecione uma API de vídeo cadastrada.")
+        result=UserVideoAPIProvider(cfg).generate(prompt, duration=payload.get("duration"), aspect_ratio=payload.get("aspect_ratio","9:16"), resolution=payload.get("resolution"))
+        out=project_dir(project_id)/"exports"/"social_video_result.json"
+        out.write_text(__import__("json").dumps(result,ensure_ascii=False,indent=2),encoding="utf-8")
+        checkpoint(project_id,"social_video",{"provider":cfg.get("name"),"prompt":prompt,"result_file":str(out)})
+        return {"ok":True,"provider":cfg.get("name"),"result":result,"saved":str(out)}
+    except HTTPException: raise
+    except Exception as e: raise HTTPException(502,str(e))
+
 @app.post("/v1/chat/completions")
 def openai_compatible_chat(payload:dict):
     messages=payload.get("messages") or []
