@@ -16,7 +16,7 @@ from .bookflow import generate_outline,generate_manuscript,metadata
 from .licensing.client import status as license_status,activate_with_license,verify_payment_and_issue_license
 from .licensing.models import LicenseActivationRequest
 from .hardware import as_dict as hardware_profile
-from .ai.image_providers import list_providers, upsert_provider
+from .ai.image_providers import list_providers, upsert_provider, generate as generate_image_api
 from .ai.remote_config import load as load_remote_config, save as save_remote_config
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
 class ProjectCreate(BaseModel): name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR"
@@ -40,6 +40,13 @@ def image_providers():
 def save_image_provider(payload:dict):
  if not payload.get("base_url"): raise HTTPException(400,"base_url é obrigatório")
  return {k:v for k,v in upsert_provider(payload).items() if k != "api_key"}
+@app.post("/api/image-providers/generate")
+async def generate_image_api_endpoint(payload:dict):
+ provider_id=str(payload.get("provider_id","")).strip(); prompt=str(payload.get("prompt","")).strip()
+ provider=next((p for p in list_providers() if p.get("id")==provider_id),None)
+ if not provider or not prompt: raise HTTPException(400,"provider_id e prompt são obrigatórios")
+ try:return await generate_image_api(provider,prompt)
+ except Exception as e:raise HTTPException(502,str(e))
 @app.get("/api/ai")
 def ai_status(): return registry.status()
 @app.get("/api/engine")
