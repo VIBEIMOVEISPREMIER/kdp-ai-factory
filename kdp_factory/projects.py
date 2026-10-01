@@ -75,7 +75,15 @@ def get_project(project_id: str):
     p = project_dir(project_id) / "project.json"
     if not p.exists():
         return None
-    return json.loads(p.read_text(encoding="utf-8"))
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        backup = p.with_suffix(p.suffix + ".bak")
+        if backup.exists():
+            data=json.loads(backup.read_text(encoding="utf-8"))
+            _safe_json_write(p,data)
+            return data
+        return None
 
 
 def update_project(project_id: str, **changes):
