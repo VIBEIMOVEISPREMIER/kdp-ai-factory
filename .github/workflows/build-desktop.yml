@@ -76,11 +76,20 @@ jobs:
             if (!$p.HasExited) { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
           }
 
+      - name: Build Windows installer
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" packaging\windows-installer.iss
+          if (!(Test-Path dist/installer/KDP-AI-Factory-Setup.exe)) { throw "Windows installer was not created." }
+
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
           name: KDP-AI-Factory-Windows
-          path: dist/KDP-AI-Factory-Windows.exe
+          path: |
+            dist/KDP-AI-Factory-Windows.exe
+            dist/installer/KDP-AI-Factory-Setup.exe
 
   linux:
     runs-on: ubuntu-latest
@@ -132,11 +141,21 @@ jobs:
           done
           cat /tmp/kdp-ai-factory.log
           exit 1
+      - name: Package Linux installer
+        run: |
+          mkdir -p dist/linux-installer
+          cp dist/KDP-AI-Factory-Linux dist/linux-installer/
+          cp packaging/install-linux.sh dist/linux-installer/
+          chmod +x dist/linux-installer/KDP-AI-Factory-Linux dist/linux-installer/install-linux.sh
+          tar -C dist/linux-installer -czf dist/KDP-AI-Factory-Linux-Installer.tar.gz .
+
       - name: Upload Linux build
         uses: actions/upload-artifact@v4
         with:
           name: KDP-AI-Factory-Linux
-          path: dist/KDP-AI-Factory-Linux
+          path: |
+            dist/KDP-AI-Factory-Linux
+            dist/KDP-AI-Factory-Linux-Installer.tar.gz
 
   release:
     if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/release/v')
@@ -160,4 +179,6 @@ jobs:
           tag_name: ${{ startsWith(github.ref, 'refs/heads/release/') && github.ref_name || github.ref_name }}
           files: |
             release/windows/KDP-AI-Factory-Windows.exe
+            release/windows/KDP-AI-Factory-Setup.exe
             release/linux/KDP-AI-Factory-Linux
+            release/linux/KDP-AI-Factory-Linux-Installer.tar.gz
