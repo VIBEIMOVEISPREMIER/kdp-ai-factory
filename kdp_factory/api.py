@@ -164,7 +164,7 @@ def payment_intent(payload:PaymentIntentRequest):
  except Exception as e:raise HTTPException(400,str(e))
 @app.post("/api/license/payment")
 def payment_license(payload:PaymentRequest):
- try:return verify_payment_and_issue_license(payload.tx_id,payload.asset,intent_id=payload.intent_id,intent_secret=payload.intent_secret)
+ try:return verify_payment_and_issue_license(payload.tx_id,payload.asset,referral_code=payload.referral_code.strip(),intent_id=payload.intent_id,intent_secret=payload.intent_secret)
  except Exception as e:raise HTTPException(400,str(e))
 @app.post("/api/projects")
 def new_project(payload:ProjectCreate):
