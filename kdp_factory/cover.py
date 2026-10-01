@@ -44,8 +44,8 @@ def create_cover(project_dir:Path,title:str,author:str,description:str,trim_size
             bw=d.textbbox((0,0),author,font=af)[2]; d.text((frontx+(pagew-bw)//2,top+int(pageh*.82)),author,font=af,fill="white")
     sx=backx+pagew; d.rectangle((sx,top,sx+int(spine*dpi),top+pageh),fill=(35,62,58))
     out=project_dir/"exports"; out.mkdir(parents=True,exist_ok=True)
-    full_png=out/"cover_full.png"; full_jpg=out/"cover_full.jpg"; front_png=out/"cover_front.png"; front_jpg=out/"cover_front.jpg"; pdf=out/"cover_full.pdf"
-    img.save(full_png,dpi=(dpi,dpi)); img.save(full_jpg,quality=95,dpi=(dpi,dpi))
-    front=img.crop((frontx,top,frontx+pagew,top+pageh)); front.save(front_png,dpi=(dpi,dpi)); front.save(front_jpg,quality=95,dpi=(dpi,dpi))
+    full_png=out/"cover_full.png"; full_jpg=out/"cover_full.jpg"; full_tiff=out/"cover_full.tiff"; front_png=out/"cover_front.png"; front_jpg=out/"cover_front.jpg"; front_tiff=out/"cover_front.tiff"; pdf=out/"cover_full.pdf"
+    img.save(full_png,dpi=(dpi,dpi)); img.save(full_jpg,quality=95,dpi=(dpi,dpi)); img.save(full_tiff,format="TIFF",dpi=(dpi,dpi))
+    front=img.crop((frontx,top,frontx+pagew,top+pageh)); front.save(front_png,dpi=(dpi,dpi)); front.save(front_jpg,quality=95,dpi=(dpi,dpi)); front.save(front_tiff,format="TIFF",dpi=(dpi,dpi))
     c=canvas.Canvas(str(pdf),pagesize=(W/dpi*72,H/dpi*72)); c.drawImage(ImageReader(img),0,0,width=W/dpi*72,height=H/dpi*72); c.showPage(); c.save()
-    return {"pdf":str(pdf),"png":str(full_png),"jpg":str(full_jpg),"front_png":str(front_png),"front_jpg":str(front_jpg)}
+    return {"pdf":str(pdf),"png":str(full_png),"jpg":str(full_jpg),"tiff":str(full_tiff),"front_png":str(front_png),"front_jpg":str(front_jpg),"front_tiff":str(front_tiff)}
