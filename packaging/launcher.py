@@ -9,7 +9,6 @@ import urllib.request
 from pathlib import Path
 
 import uvicorn
-import webview
 from kdp_factory.cli import app
 from kdp_factory.db import init_db
 
@@ -94,6 +93,8 @@ def _run_desktop() -> None:
         # The Windows app is a native desktop window. It never opens the SaaS URL
         # and never downloads the web application. The bundled dashboard is served
         # only by the local FastAPI process.
+        import webview
+
         webview.create_window(
             "KDP AI Factory",
             URL,
