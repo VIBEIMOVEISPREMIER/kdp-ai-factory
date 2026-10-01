@@ -2,7 +2,7 @@ name: Build desktop binaries
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'release/v*']
     tags: ['v*']
   workflow_dispatch:
 
@@ -119,7 +119,7 @@ jobs:
           path: dist/KDP-AI-Factory-Linux
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/release/v')
     needs: [windows, linux]
     runs-on: ubuntu-latest
     steps:
@@ -137,6 +137,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          tag_name: ${{ startsWith(github.ref, 'refs/heads/release/') && github.ref_name || github.ref_name }}
           files: |
             release/windows/KDP-AI-Factory-Windows.exe
             release/linux/KDP-AI-Factory-Linux
