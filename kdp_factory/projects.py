@@ -131,7 +131,7 @@ def list_projects():
     with connect() as db:
         return [
             dict(row)
-            for row in db.execute(
+            for row in execute(db,
                 "SELECT * FROM projects ORDER BY updated_at DESC"
             ).fetchall()
         ]
