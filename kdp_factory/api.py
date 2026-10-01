@@ -31,11 +31,25 @@ class PaymentIntentRequest(BaseModel): asset:str=Field(pattern=r"^(USDT|BNB)$")
 class PaymentRequest(BaseModel): tx_id:str=Field(min_length=20,max_length=200);asset:str=Field(pattern=r"^(USDT|BNB)$");referral_code:str="";intent_id:str="";intent_secret:str=""
 @app.on_event("startup")
 def startup():
-    init_db()
-    restored = restore_projects()
-    status = persistence_status()
-    app.state.web_persistence = status
-    print(f"Web persistence: {status}; restored_projects={restored}")
+    # Never block the HTTP server from binding its port because Neon is
+    # unavailable or slow. Persistence is reported as degraded instead.
+    restored = 0
+    try:
+        init_db()
+        restored = restore_projects()
+        status = persistence_status()
+        app.state.web_persistence = status
+        print(f"Web persistence: {status}; restored_projects={restored}")
+    except Exception as exc:
+        status = {
+            "enabled": bool(__import__("os").getenv("DATABASE_URL", "").strip()),
+            "backend": "neon-postgres",
+            "status": "degraded",
+            "error": str(exc)[:500],
+            "project_archives": 0,
+        }
+        app.state.web_persistence = status
+        print(f"Web persistence degraded: {exc!r}")
 @app.get("/api/health")
 def health(): return {"ok":True,"service":"kdp-ai-factory","version":"1.0.0","persistence":getattr(app.state,"web_persistence",{"enabled":False,"backend":"local"})}
 @app.get("/api/doctor")
