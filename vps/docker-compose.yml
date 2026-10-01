@@ -1,0 +1,12 @@
+services:
+  kdp-engine:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./engine:/app
+    environment:
+      KDP_ENGINE_TOKEN: ${KDP_ENGINE_TOKEN}
+    ports:
+      - "${KDP_ENGINE_PORT:-8189}:8189"
+    command: ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8189"]
+    restart: unless-stopped
