@@ -1,5 +1,7 @@
 # Arquitetura pública e privada de licenciamento
 
+O pagamento do cliente é verificado diretamente na BNB Smart Chain. A Bybit é opcional e serve apenas como ferramenta operacional para gestão dos ativos recebidos.
+
 O KDP AI Factory mantém o aplicativo/editorial como código aberto e separa a infraestrutura oficial de confiança.
 
 ## Repositório público
@@ -60,7 +62,7 @@ A validação deve conferir, no servidor:
 - unicidade da transação;
 - vínculo entre pagamento, Machine ID e licença.
 
-Para BNB, o servidor deve calcular o equivalente em USD usando uma cotação confiável no momento definido pela política de pagamento. Não deve assumir um valor fixo de BNB.
+Para BNB, o servidor deve calcular o equivalente em USD usando uma cotação confiável de acordo com a política de pagamento vigente. Não deve assumir um valor fixo de BNB. A validação do pagamento continua sendo feita diretamente na BSC.
 
 ## Assinatura
 
