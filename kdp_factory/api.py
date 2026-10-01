@@ -19,6 +19,7 @@ from .hardware import as_dict as hardware_profile
 from .ai.image_providers import list_providers, upsert_provider, generate as generate_image_api
 from .ai.remote_config import load as load_remote_config, save as save_remote_config
 from .ai.user_providers import list_providers as list_ai_providers, upsert_provider as upsert_ai_provider, remove_provider as remove_ai_provider
+from .web_persistence import restore_projects, persist_project
 from .config import LICENSE_SERVER_URL
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
 class ProjectCreate(BaseModel): name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR";subject:str="";edition:str="print"
@@ -29,7 +30,9 @@ class CheckpointRequest(BaseModel): stage:str;state:dict={}
 class PaymentIntentRequest(BaseModel): asset:str=Field(pattern=r"^(USDT|BNB)$")
 class PaymentRequest(BaseModel): tx_id:str=Field(min_length=20,max_length=200);asset:str=Field(pattern=r"^(USDT|BNB)$");referral_code:str="";intent_id:str="";intent_secret:str=""
 @app.on_event("startup")
-def startup(): init_db()
+def startup():
+    init_db()
+    restore_projects()
 @app.get("/api/health")
 def health(): return {"ok":True,"service":"kdp-ai-factory","version":"1.0.0"}
 @app.get("/api/doctor")
