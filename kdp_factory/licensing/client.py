@@ -65,11 +65,16 @@ def activate_with_license(license_token):
  r=httpx.post(f"{LICENSE_SERVER_URL}/v1/license/activate",json={"machine_id":machine_id(),"user_id":_user_id(),"license_token":license_token},timeout=15);r.raise_for_status();server=r.json()
  if not server.get("valid"):raise ValueError(server.get("reason","Licença inválida."))
  state=_read_state();state.update({"machine_id":machine_id(),"licensed":True,"license":server});_write_state(state);return server
-def verify_payment_and_issue_license(tx_id,asset,machine=None):
+def create_payment_intent(asset,machine=None):
  if not LICENSE_SERVER_URL:raise RuntimeError("Servidor de licenças não configurado.")
  mid=machine or machine_id();uid=_user_id();asset=asset.upper().strip()
- intent=httpx.post(f"{LICENSE_SERVER_URL}/v1/payment/create-intent",json={"machine_id":mid,"user_id":uid,"asset":asset},timeout=15);intent.raise_for_status();pi=intent.json()
- r=httpx.post(f"{LICENSE_SERVER_URL}/v1/payment/verify-and-issue",json={"machine_id":mid,"user_id":uid,"intent_id":pi["intent_id"],"intent_secret":pi["intent_secret"],"tx_id":tx_id.strip(),"asset":asset},timeout=45);r.raise_for_status();data=r.json()
+ r=httpx.post(f"{LICENSE_SERVER_URL}/v1/payment/create-intent",json={"machine_id":mid,"user_id":uid,"asset":asset},timeout=15);r.raise_for_status();return r.json()
+
+def verify_payment_and_issue_license(tx_id,asset,machine=None,intent_id=None,intent_secret=None):
+ if not LICENSE_SERVER_URL:raise RuntimeError("Servidor de licenças não configurado.")
+ mid=machine or machine_id();uid=_user_id();asset=asset.upper().strip()
+ if not intent_id or not intent_secret:raise RuntimeError("Crie um pedido de pagamento antes de enviar a transação.")
+ r=httpx.post(f"{LICENSE_SERVER_URL}/v1/payment/verify-and-issue",json={"machine_id":mid,"user_id":uid,"intent_id":intent_id,"intent_secret":intent_secret,"tx_id":tx_id.strip(),"asset":asset},timeout=45);r.raise_for_status();data=r.json()
  if not data.get("valid"):raise ValueError(data.get("reason","Pagamento não validado."))
  _decode_license(data["license_token"])
  state=_read_state();state.update({"machine_id":machine_id(),"user_id":uid,"licensed":True,"license":data});_write_state(state)
