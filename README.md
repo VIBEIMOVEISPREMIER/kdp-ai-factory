@@ -207,3 +207,12 @@ Providers can be paid, free, or self-hosted. Credentials are kept out of GitHub.
 GitHub Actions builds the Windows executable and Inno Setup installer. The installer uses a permissive hardware gate: 64-bit Windows, 8 GB RAM and 10 GB free space are the installation baseline. GPU-heavy features are selected at runtime instead of preventing installation.
 
 The project intentionally does not bundle third-party model weights or proprietary AI binaries.
+
+
+## AI Router — user-owned keys and local-first processing
+
+The Factory does not require the operator to pay for AI generation. Users can configure their own provider keys, whether a provider's current free tier, a paid account, or a self-hosted endpoint. Keys are stored locally in encrypted storage derived from the installation machine identity and are never committed to GitHub.
+
+The built-in router prioritizes available local Ollama/ComfyUI services and then falls back through configured user-owned providers by priority. The desktop and web dashboard use the same provider abstraction. A local OpenAI-compatible endpoint is available at `/v1/chat/completions`, allowing compatible clients to use the Factory as a local router.
+
+The Factory does not promise permanent free quotas: provider limits and terms are controlled by each provider. The application detects hardware separately from provider limits and does not convert API usage into paid Factory credits.
