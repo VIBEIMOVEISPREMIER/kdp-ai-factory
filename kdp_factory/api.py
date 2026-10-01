@@ -1,4 +1,5 @@
 from fastapi import FastAPI,HTTPException
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel,Field
 from pathlib import Path
 from .db import init_db
@@ -116,3 +117,9 @@ def create_manuscript(project_id:str,payload:dict):
 def create_metadata(project_id:str,payload:dict):
  try:return metadata(project_id,payload.get("description",""),payload.get("audience",""))
  except Exception as e:raise HTTPException(400,str(e))
+
+
+# The packaged desktop build serves the dashboard locally when its static bundle exists.
+_static_dir = Path(__file__).resolve().parent / "static"
+if _static_dir.exists():
+    app.mount("/", StaticFiles(directory=_static_dir, html=True), name="dashboard")
