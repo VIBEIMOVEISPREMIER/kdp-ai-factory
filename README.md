@@ -2,7 +2,7 @@
 
 Open-source AI publishing factory for creating, editing, illustrating, formatting, validating and preparing books for Amazon KDP.
 
-> Official edition: the source code is open, while the official distribution uses a one-book free trial and a lifetime license after the trial.
+> Official edition: this repository contains the public application. The official distribution may use a one-book free trial and a lifetime license after the trial.
 
 ## What it does
 
@@ -127,11 +127,11 @@ kdp-factory models
 
 The native Windows path, public licensing client, official licensing API boundary and Render deployment configuration are included.
 
-The production payment verifier still requires the private server implementation, final BSC secondary verification and end-to-end payment tests before real payments are accepted.
+The production payment verifier is maintained in the separate private license-server repository. Real payments should only be accepted after the private service, secrets, blockchain verification and end-to-end payment tests are configured.
 
 ## License
 
-The final open-source license is intentionally left to the project owner to define before public release.
+This project is released under the MIT License. See [LICENSE](LICENSE).
 
 
 ## Hybrid AI architecture
