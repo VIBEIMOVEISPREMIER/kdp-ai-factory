@@ -23,6 +23,15 @@ def _decode_license(token:str):
  data=json.loads(raw.decode("utf-8"))
  if data.get("type")!="lifetime" or data.get("machine_id")!=machine_id():raise ValueError("Licença não pertence a esta máquina.")
  return data
+def server_bootstrap(fingerprint_hash: str = ""):
+ if not LICENSE_SERVER_URL: return {}
+ try:
+  r=httpx.post(f"{LICENSE_SERVER_URL}/v1/client/bootstrap",json={"machine_id":machine_id(),"fingerprint_hash":fingerprint_hash},timeout=10)
+  r.raise_for_status()
+  return r.json()
+ except httpx.HTTPError:
+  return {}
+
 def status():
  state=_read_state()
  return {"licensed":bool(state.get("licensed")),"books_created":int(state.get("books_created",0)),"free_books_remaining":0 if state.get("licensed") else max(0,FREE_BOOK_LIMIT-int(state.get("books_created",0))),"license_server_configured":bool(LICENSE_SERVER_URL),"machine_id":machine_id()}
