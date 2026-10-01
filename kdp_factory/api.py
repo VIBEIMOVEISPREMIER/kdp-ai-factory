@@ -19,7 +19,7 @@ from .hardware import as_dict as hardware_profile
 from .ai.image_providers import list_providers, upsert_provider, generate as generate_image_api
 from .ai.remote_config import load as load_remote_config, save as save_remote_config
 from .ai.user_providers import list_providers as list_ai_providers, upsert_provider as upsert_ai_provider, remove_provider as remove_ai_provider
-from .web_persistence import restore_projects, persist_project
+from .web_persistence import restore_projects, persist_project, persistence_status
 from .config import LICENSE_SERVER_URL
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
 class ProjectCreate(BaseModel): name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR";subject:str="";edition:str="print"
@@ -32,9 +32,12 @@ class PaymentRequest(BaseModel): tx_id:str=Field(min_length=20,max_length=200);a
 @app.on_event("startup")
 def startup():
     init_db()
-    restore_projects()
+    restored = restore_projects()
+    status = persistence_status()
+    app.state.web_persistence = status
+    print(f"Web persistence: {status}; restored_projects={restored}")
 @app.get("/api/health")
-def health(): return {"ok":True,"service":"kdp-ai-factory","version":"1.0.0"}
+def health(): return {"ok":True,"service":"kdp-ai-factory","version":"1.0.0","persistence":getattr(app.state,"web_persistence",{"enabled":False,"backend":"local"})}
 @app.get("/api/doctor")
 def doctor(): return run_doctor()
 @app.get("/api/hardware")
