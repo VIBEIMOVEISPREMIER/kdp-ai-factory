@@ -9,7 +9,7 @@ AppName={#AppName}
 AppVersion={#AppVersion}
 DefaultDirName={autopf}\KDP AI Factory
 DefaultGroupName=KDP AI Factory
-OutputDir=dist\installer
+OutputDir=..\dist\installer
 OutputBaseFilename=KDP-AI-Factory-Setup
 Compression=lzma2
 SolidCompression=yes
@@ -19,7 +19,7 @@ PrivilegesRequired=lowest
 UninstallDisplayIcon={app}\{#AppExeName}
 
 [Files]
-Source: "dist\{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\KDP AI Factory"; Filename: "{app}\{#AppExeName}"
