@@ -1,0 +1,53 @@
+name: Build desktop binaries
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+      - name: Build Windows EXE
+        run: |
+          pyinstaller --noconfirm --clean --onefile --name KDP-AI-Factory-Windows kdp_factory/cli.py
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: KDP-AI-Factory-Windows
+          path: dist/KDP-AI-Factory-Windows.exe
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+      - name: Build Linux executable
+        run: |
+          pyinstaller --noconfirm --clean --onefile --name KDP-AI-Factory-Linux kdp_factory/cli.py
+          chmod +x dist/KDP-AI-Factory-Linux
+      - name: Upload Linux build
+        uses: actions/upload-artifact@v4
+        with:
+          name: KDP-AI-Factory-Linux
+          path: dist/KDP-AI-Factory-Linux
