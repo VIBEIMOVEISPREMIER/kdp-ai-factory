@@ -113,7 +113,7 @@ jobs:
           python -m pytest -q
       - name: Build Linux executable
         run: |
-          pyinstaller --noconfirm --clean --onefile --name KDP-AI-Factory-Linux --paths . --hidden-import kdp_factory.cli --hidden-import webview.platforms.gtk --collect-all webview --add-data "kdp_factory/static:kdp_factory/static" --collect-all kdp_factory packaging/launcher.py
+          pyinstaller --noconfirm --clean --onefile --name KDP-AI-Factory-Linux --paths . --hidden-import kdp_factory.cli --add-data "kdp_factory/static:kdp_factory/static" --collect-all kdp_factory packaging/launcher.py
           test -f dist/KDP-AI-Factory-Linux
           chmod +x dist/KDP-AI-Factory-Linux
           ./dist/KDP-AI-Factory-Linux > /tmp/kdp-ai-factory.log 2>&1 &
