@@ -39,7 +39,7 @@ def export_project(project_id,fmt="pdf",author=""):
     update_project(project_id,status="exported",progress=100); checkpoint(project_id,"export",{"file":str(out)}); return out
 
 def metadata(project_id,description="",audience="",**extra):
-    p=get_project(project_id); data=MetadataEngine().generate(p["name"],description,p["language"],audience,book_type=p.get("book_type","custom"),**extra)
+    p=get_project(project_id); data=MetadataEngine().generate(p["name"],description,p["language"],audience,book_type=p.get("book_type","custom"),subject=p.get("spec",{}).get("subject",""),**extra)
     out=project_dir(project_id)/"metadata.json"; MetadataEngine().save(data,out); return data
 
 def generate_cover(project_id,author="",description="",pages=None,front_image=None,back_image=None):
