@@ -18,6 +18,7 @@ from .licensing.models import LicenseActivationRequest
 from .hardware import as_dict as hardware_profile
 from .ai.image_providers import list_providers, upsert_provider, generate as generate_image_api
 from .ai.remote_config import load as load_remote_config, save as save_remote_config
+from .ai.user_providers import list_providers as list_ai_providers, upsert_provider as upsert_ai_provider, remove_provider as remove_ai_provider
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
 class ProjectCreate(BaseModel): name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR";subject:str="";edition:str="print"
 class TextRequest(BaseModel): prompt:str=Field(min_length=1);model:str|None=None
@@ -49,6 +50,38 @@ async def generate_image_api_endpoint(payload:dict):
  except Exception as e:raise HTTPException(502,str(e))
 @app.get("/api/ai")
 def ai_status(): return registry.status()
+
+@app.get("/api/ai/providers")
+def ai_providers(): return list_ai_providers()
+
+@app.post("/api/ai/providers")
+def save_ai_provider(payload:dict):
+    if not payload.get("name") or not payload.get("base_url"):
+        raise HTTPException(400,"name e base_url são obrigatórios")
+    try:
+        return upsert_ai_provider(payload)
+    except Exception as e:
+        raise HTTPException(400,str(e))
+
+@app.delete("/api/ai/providers/{provider_id}")
+def delete_ai_provider(provider_id:str):
+    if not remove_ai_provider(provider_id):
+        raise HTTPException(404,"Provedor não encontrado")
+    return {"ok":True}
+
+@app.post("/v1/chat/completions")
+def openai_compatible_chat(payload:dict):
+    messages=payload.get("messages") or []
+    if not messages:
+        raise HTTPException(400,"messages é obrigatório")
+    prompt="\n\n".join(str(m.get("content","")) for m in messages if m.get("role")!="system")
+    system="\n".join(str(m.get("content","")) for m in messages if m.get("role")=="system")
+    full=(system+"\n\n"+prompt).strip()
+    try:
+        result=registry.router.text(full, model=payload.get("model"), temperature=payload.get("temperature"), max_tokens=payload.get("max_tokens"))
+        return {"id":"kdp-local-chat","object":"chat.completion","model":result.model,"choices":[{"index":0,"message":{"role":"assistant","content":result.text},"finish_reason":"stop"}]}
+    except Exception as e:
+        raise HTTPException(503,str(e))
 @app.get("/api/engine")
 def engine_config():
  data=load_remote_config()
@@ -98,7 +131,7 @@ def add_task(project_id:str,payload:dict):
 @app.post("/api/ai/generate")
 def generate(req:TextRequest):
  try:
-  result=registry.text.generate(req.prompt,req.model);return {"text":result.text,"model":result.model,"raw":result.raw}
+  result=registry.router.text(req.prompt,req.model);return {"text":result.text,"model":result.model,"raw":result.raw}
  except Exception as e:raise HTTPException(503,str(e))
 @app.post("/api/editorial/outline")
 def outline(req:TextRequest):
