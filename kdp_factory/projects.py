@@ -6,7 +6,7 @@ import os
 import shutil
 
 from .config import PROJECTS_DIR, ensure_dirs
-from .db import connect
+from .db import connect, execute
 from .books.templates import template_for
 from .licensing.client import assert_can_create_book, register_book_created
 from .web_persistence import persist_project
@@ -63,7 +63,7 @@ def create_project(name: str, book_type: str, language: str, **overrides):
     _safe_json_write(folder / "checkpoints.json", [])
 
     with connect() as db:
-        db.execute(
+        execute(db,
             "INSERT INTO projects VALUES (?, ?, ?, ?, 'created', 0, ?, ?)",
             (pid, name, book_type, language, stamp, stamp),
         )
@@ -109,7 +109,7 @@ def update_project(project_id: str, **changes):
                 values.append(changes[k])
         if fields:
             values += [data["updated_at"], project_id]
-            db.execute(
+            execute(db,
                 f"UPDATE projects SET {','.join(fields)},updated_at=? WHERE id=?",
                 values,
             )
