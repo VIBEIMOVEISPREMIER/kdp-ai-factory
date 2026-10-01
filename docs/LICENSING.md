@@ -1,5 +1,7 @@
 # Licenciamento
 
+O KDP AI Factory é código aberto, mas a distribuição oficial pode utilizar uma política comercial: um livro gratuito por máquina/instalação e, depois disso, uma licença vitalícia.
+
 O KDP AI Factory tem código aberto, mas a versão oficial possui uma política de uso: uma instalação/máquina pode criar um livro gratuitamente. Depois disso, é necessária uma licença vitalícia.
 
 ## O que o open source permite
@@ -35,7 +37,7 @@ O cliente envia o Machine ID e recebe um token/licença assinado. A chave privad
 
 ## Pagamentos
 
-O fluxo oficial será:
+O fluxo oficial é:
 
 1. Cliente escolhe USDT ou BNB.
 2. Cliente recebe a carteira oficial e a rede BSC.
@@ -46,7 +48,7 @@ O fluxo oficial será:
 7. O servidor emite a licença.
 8. A licença é vinculada ao Machine ID.
 
-Credenciais da Bybit são exclusivas do servidor. Nunca coloque API key ou API secret no cliente ou no GitHub.
+A Bybit pode ser utilizada pelo operador como ferramenta opcional para administrar os criptoativos recebidos. Ela não é obrigatória para o cliente pagar. A validação do pagamento é feita diretamente na BNB Smart Chain. Credenciais de exchange, quando utilizadas, são exclusivas do servidor e nunca devem ser colocadas no cliente ou no GitHub.
 
 ## Limitações
 
