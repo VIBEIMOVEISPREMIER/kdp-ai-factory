@@ -58,21 +58,21 @@ es.IncompatibleRAM=Este ordenador tiene menos de 16 GB de RAM. KDP AI Factory ej
 es.IncompatibleGPU=La tarjeta gráfica detectada tiene menos de 4 GB de memoria de vídeo. Este ordenador no cumple el perfil mínimo recomendado para generar imágenes localmente.
 es.IncompatibleDisk=Hay menos de 40 GB de espacio libre en el disco del sistema. La instalación y los modelos locales necesitan espacio adicional.
 es.IncompatibleGeneric=Este ordenador no cumple los requisitos mínimos de KDP AI Factory. La instalación se detuvo para evitar una experiencia inestable.
-es.IncompatibleDetails=Mínimo recomendado: Windows 10/11 de 64 bits, 16 GB de RAM, GPU con al menos 4 GB de VRAM cuando sea detectable y 40 GB libres.
+es.IncompatibleDetails=Mínimo para instalar: Windows 10/11 de 64 bits, 8 GB de RAM y 10 GB libres. Las funciones de IA se ajustan automáticamente.
 
 fr.IncompatibleTitle=Ordinateur incompatible avec KDP AI Factory
 fr.IncompatibleRAM=Cet ordinateur dispose de moins de 16 Go de RAM. KDP AI Factory exécute l'IA localement et a besoin de suffisamment de mémoire pour travailler avec les livres, modèles et images de manière stable.
 fr.IncompatibleGPU=La carte graphique détectée dispose de moins de 4 Go de mémoire vidéo. Cet ordinateur ne répond pas au profil minimal recommandé pour la génération locale d'images.
 fr.IncompatibleDisk=Il reste moins de 40 Go d'espace libre sur le disque système. L'installation et les modèles locaux nécessitent de l'espace supplémentaire.
 fr.IncompatibleGeneric=Cet ordinateur ne répond pas aux exigences minimales de KDP AI Factory. L'installation a été interrompue pour éviter une expérience instable.
-fr.IncompatibleDetails=Minimum recommandé : Windows 10/11 64 bits, 16 Go de RAM, GPU avec au moins 4 Go de VRAM lorsqu'elle est détectable et 40 Go libres.
+fr.IncompatibleDetails=Minimum d'installation : Windows 10/11 64 bits, 8 Go de RAM et 10 Go libres. Les fonctions d'IA sont adaptées automatiquement.
 
 de.IncompatibleTitle=Computer nicht mit KDP AI Factory kompatibel
 de.IncompatibleRAM=Dieser Computer verfügt über weniger als 16 GB RAM. KDP AI Factory führt KI lokal aus und benötigt ausreichend Arbeitsspeicher für Bücher, Modelle und Bilder.
 de.IncompatibleGPU=Der erkannte Grafikadapter verfügt über weniger als 4 GB Videospeicher. Dieser Computer erfüllt nicht das empfohlene Mindestprofil für die lokale Bildgenerierung.
 de.IncompatibleDisk=Auf dem Systemlaufwerk sind weniger als 40 GB frei. Installation und lokale Modelle benötigen zusätzlichen Speicherplatz.
 de.IncompatibleGeneric=Dieser Computer erfüllt die Mindestanforderungen von KDP AI Factory nicht. Die Installation wurde abgebrochen, um eine instabile Nutzung zu vermeiden.
-de.IncompatibleDetails=Empfohlenes Minimum: Windows 10/11 64 Bit, 16 GB RAM, GPU mit mindestens 4 GB VRAM, sofern erkennbar, und 40 GB freier Speicher.
+de.IncompatibleDetails=Installationsminimum: Windows 10/11 64 Bit, 8 GB RAM und 10 GB freier Speicher. KI-Funktionen werden automatisch angepasst.
 
 [Files]
 Source: "..\dist\KDP-AI-Factory.exe"; DestDir: "{app}"; Flags: ignoreversion
