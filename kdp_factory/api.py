@@ -19,7 +19,7 @@ from .hardware import as_dict as hardware_profile
 from .ai.image_providers import list_providers, upsert_provider, generate as generate_image_api
 from .ai.remote_config import load as load_remote_config, save as save_remote_config
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
-class ProjectCreate(BaseModel): name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR"
+class ProjectCreate(BaseModel): name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR";subject:str="";edition:str="print"
 class TextRequest(BaseModel): prompt:str=Field(min_length=1);model:str|None=None
 class ImportRequest(BaseModel): path:str
 class ValidateRequest(BaseModel): spec:dict;pdf_path:str|None=None
@@ -82,7 +82,7 @@ def payment_license(payload:PaymentRequest):
  except Exception as e:raise HTTPException(400,str(e))
 @app.post("/api/projects")
 def new_project(payload:ProjectCreate):
- try:return create_project(payload.name,payload.book_type,payload.language)
+ try:return create_project(payload.name,payload.book_type,payload.language,subject=payload.subject,edition=payload.edition)
  except PermissionError as e:raise HTTPException(402,str(e))
 @app.patch("/api/projects/{project_id}")
 def patch_project(project_id:str,payload:dict):
