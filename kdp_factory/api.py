@@ -19,6 +19,7 @@ from .hardware import as_dict as hardware_profile
 from .ai.image_providers import list_providers, upsert_provider, generate as generate_image_api
 from .ai.remote_config import load as load_remote_config, save as save_remote_config
 from .ai.user_providers import list_providers as list_ai_providers, upsert_provider as upsert_ai_provider, remove_provider as remove_ai_provider
+from .config import LICENSE_SERVER_URL
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
 class ProjectCreate(BaseModel): name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR";subject:str="";edition:str="print"
 class TextRequest(BaseModel): prompt:str=Field(min_length=1);model:str|None=None
@@ -148,6 +149,10 @@ def project(project_id:str):
  return p
 @app.get("/api/license")
 def license(): return license_status()
+
+@app.get("/api/affiliate/config")
+def affiliate_config():
+    return {"url": LICENSE_SERVER_URL + "/affiliate", "api_base": LICENSE_SERVER_URL}
 @app.post("/api/license/activate")
 def activate_license(payload:LicenseActivationRequest):
  try:return activate_with_license(payload.license_token)
