@@ -12,7 +12,7 @@ from .imports.engine import import_file,normalize_to_text
 from .kdp.validator import KDPValidator
 from .models.manager import ModelManager
 from .export.engine import ExportEngine
-from .bookflow import generate_outline,generate_manuscript,metadata
+from .bookflow import generate_outline,generate_manuscript,metadata,export_project,generate_cover
 from .licensing.client import status as license_status,activate_with_license,verify_payment_and_issue_license
 from .licensing.models import LicenseActivationRequest
 from .hardware import as_dict as hardware_profile
