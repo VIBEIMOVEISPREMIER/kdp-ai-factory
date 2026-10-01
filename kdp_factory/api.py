@@ -13,7 +13,7 @@ from .kdp.validator import KDPValidator
 from .models.manager import ModelManager
 from .export.engine import ExportEngine
 from .bookflow import generate_outline,generate_manuscript,metadata,export_project,generate_cover
-from .licensing.client import status as license_status,activate_with_license,verify_payment_and_issue_license
+from .licensing.client import status as license_status,activate_with_license,create_payment_intent,verify_payment_and_issue_license
 from .licensing.models import LicenseActivationRequest
 from .hardware import as_dict as hardware_profile
 from .ai.image_providers import list_providers, upsert_provider, generate as generate_image_api
@@ -26,7 +26,8 @@ class TextRequest(BaseModel): prompt:str=Field(min_length=1);model:str|None=None
 class ImportRequest(BaseModel): path:str
 class ValidateRequest(BaseModel): spec:dict;pdf_path:str|None=None
 class CheckpointRequest(BaseModel): stage:str;state:dict={}
-class PaymentRequest(BaseModel): tx_id:str=Field(min_length=20,max_length=200);asset:str=Field(pattern=r"^(USDT|BNB)$");referral_code:str=""
+class PaymentIntentRequest(BaseModel): asset:str=Field(pattern=r"^(USDT|BNB)$")
+class PaymentRequest(BaseModel): tx_id:str=Field(min_length=20,max_length=200);asset:str=Field(pattern=r"^(USDT|BNB)$");referral_code:str="";intent_id:str="";intent_secret:str=""
 @app.on_event("startup")
 def startup(): init_db()
 @app.get("/api/health")
@@ -157,9 +158,13 @@ def affiliate_config():
 def activate_license(payload:LicenseActivationRequest):
  try:return activate_with_license(payload.license_token)
  except Exception as e:raise HTTPException(400,str(e))
+@app.post("/api/license/payment-intent")
+def payment_intent(payload:PaymentIntentRequest):
+ try:return create_payment_intent(payload.asset)
+ except Exception as e:raise HTTPException(400,str(e))
 @app.post("/api/license/payment")
 def payment_license(payload:PaymentRequest):
- try:return verify_payment_and_issue_license(payload.tx_id,payload.asset,payload.referral_code.strip())
+ try:return verify_payment_and_issue_license(payload.tx_id,payload.asset,intent_id=payload.intent_id,intent_secret=payload.intent_secret)
  except Exception as e:raise HTTPException(400,str(e))
 @app.post("/api/projects")
 def new_project(payload:ProjectCreate):
