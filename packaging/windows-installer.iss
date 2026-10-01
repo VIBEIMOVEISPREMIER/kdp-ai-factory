@@ -4,7 +4,7 @@
 #define AppExeName "KDP-AI-Factory-Windows.exe"
 
 [Setup]
-AppId={{A9D7F6B8-6A2D-4C9E-9E6C-KDPAIFACTORY01}
+AppId={A9D7F6B8-6A2D-4C9E-9E6C-1234567890AB}
 AppName={#AppName}
 AppVersion={#AppVersion}
 DefaultDirName={autopf}\KDP AI Factory
