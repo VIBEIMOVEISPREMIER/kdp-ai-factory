@@ -57,7 +57,7 @@ jobs:
       - name: Build dashboard
         working-directory: apps/dashboard
         run: |
-          npm ci
+          npm install
           npm run build
       - name: Bundle dashboard
         run: |
