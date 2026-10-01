@@ -17,6 +17,7 @@ from .licensing.client import status as license_status,activate_with_license,ver
 from .licensing.models import LicenseActivationRequest
 from .hardware import as_dict as hardware_profile
 from .ai.image_providers import list_providers, upsert_provider
+from .ai.remote_config import load as load_remote_config, save as save_remote_config
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
 class ProjectCreate(BaseModel): name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR"
 class TextRequest(BaseModel): prompt:str=Field(min_length=1);model:str|None=None
@@ -41,6 +42,17 @@ def save_image_provider(payload:dict):
  return {k:v for k,v in upsert_provider(payload).items() if k != "api_key"}
 @app.get("/api/ai")
 def ai_status(): return registry.status()
+@app.get("/api/engine")
+def engine_config():
+ data=load_remote_config()
+ return {"url":data.get("url",""),"configured":bool(data.get("url")),"token_configured":bool(data.get("token"))}
+@app.post("/api/engine")
+def configure_engine(payload:dict):
+ url=str(payload.get("url","")).strip()
+ token=str(payload.get("token","")).strip()
+ save_remote_config(url,token)
+ registry.configure_remote(url,token)
+ return {"url":url,"configured":bool(url),"token_configured":bool(token),"status":registry.status()}
 @app.get("/api/models")
 def models():
  m=ModelManager();return {"hardware":m.hardware(),"ollama":m.ollama_models(),"recommended":m.recommendations()}
