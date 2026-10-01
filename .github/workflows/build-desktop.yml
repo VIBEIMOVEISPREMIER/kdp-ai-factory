@@ -38,10 +38,18 @@ jobs:
           pip install pyinstaller
       - name: Build Windows EXE
         run: |
-          pyinstaller --noconfirm --clean --onefile --name KDP-AI-Factory-Windows --paths . --hidden-import kdp_factory.cli --add-data "kdp_factory/static;kdp_factory/static" --collect-all kdp_factory packaging/launcher.py
+          pyinstaller --noconfirm --clean --onefile --noconsole --name KDP-AI-Factory-Windows --paths . --hidden-import kdp_factory.cli --add-data "kdp_factory/static;kdp_factory/static" --collect-all kdp_factory packaging/launcher.py
           if (!(Test-Path dist/KDP-AI-Factory-Windows.exe)) { throw "Windows EXE was not created." }
-          & dist/KDP-AI-Factory-Windows.exe --help
-          if ($LASTEXITCODE -ne 0) { throw "Windows EXE smoke test failed with exit code $LASTEXITCODE." }
+          $p = Start-Process -FilePath "dist/KDP-AI-Factory-Windows.exe" -PassThru
+          try {
+            Start-Sleep -Seconds 5
+            $response = Invoke-WebRequest -Uri "http://127.0.0.1:8000/" -UseBasicParsing -TimeoutSec 10
+            if ($response.StatusCode -lt 200 -or $response.StatusCode -ge 500) {
+              throw "Windows EXE smoke test returned HTTP $($response.StatusCode)."
+            }
+          } finally {
+            if (!$p.HasExited) { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
+          }
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
@@ -84,7 +92,6 @@ jobs:
         with:
           name: KDP-AI-Factory-Linux
           path: dist/KDP-AI-Factory-Linux
-
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
