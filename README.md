@@ -132,3 +132,38 @@ The production payment verifier still requires the private server implementation
 ## License
 
 The final open-source license is intentionally left to the project owner to define before public release.
+
+
+## Hybrid AI architecture
+
+KDP AI Factory is designed to work in three modes:
+
+1. **Local** — Ollama and ComfyUI run on the user's PC.
+2. **Remote GPU** — the desktop app connects to a KDP AI Engine Server running on a GPU VPS.
+3. **External API** — the user can register a paid, free, or self-hosted image API with a custom URL, endpoint, model and API key.
+
+The desktop application detects hardware and selects a capability profile. Modest computers can remain usable in Compatibility Mode instead of being rejected solely because they lack a powerful GPU.
+
+### Remote GPU
+
+See vps/SETUP.md for the complete server setup. The recommended starting point for individual users is a 24 GB NVIDIA GPU such as an RTX 4090.
+
+The Windows dashboard provides fields for the remote engine URL and token. The token is stored locally and is never displayed by the configuration endpoint.
+
+### Image API providers
+
+The dashboard provides generic provider fields:
+
+- provider name
+- base URL
+- endpoint
+- API key
+- model
+
+Providers can be paid, free, or self-hosted. Credentials are kept out of GitHub.
+
+### Windows distribution
+
+GitHub Actions builds the Windows executable and Inno Setup installer. The installer uses a permissive hardware gate: 64-bit Windows, 8 GB RAM and 10 GB free space are the installation baseline. GPU-heavy features are selected at runtime instead of preventing installation.
+
+The project intentionally does not bundle third-party model weights or proprietary AI binaries.
