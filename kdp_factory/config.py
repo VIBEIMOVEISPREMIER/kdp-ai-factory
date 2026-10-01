@@ -2,10 +2,12 @@ from pathlib import Path
 import os
 import sys
 
-if getattr(sys, "frozen", False) and os.name == "nt":
+if os.name == "nt":
     _base = Path(os.getenv("LOCALAPPDATA", Path.home())) / "KDP AI Factory"
+elif sys.platform == "darwin":
+    _base = Path.home() / "Library" / "Application Support" / "KDP AI Factory"
 else:
-    _base = Path(__file__).resolve().parent.parent
+    _base = Path(os.getenv("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "KDP AI Factory"
 
 def _path_env(name, default):
     return Path(os.getenv(name, str(default))).expanduser().resolve()
