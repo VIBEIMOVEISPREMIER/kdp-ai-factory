@@ -101,7 +101,7 @@ class UserImageAPIProvider(ImageProvider):
         base=self.config.get("base_url","").rstrip("/")
         ep=self.config.get("endpoint","/v1/images/generations")
         url=f"{base}/{ep.lstrip('/')}"
-        headers={"Content-Type":"application/json","Authorization":f"Bearer {self.config['api_key']"}
+        headers={"Content-Type":"application/json","Authorization":f"Bearer {self.config['api_key']}"}
         payload={"prompt":prompt}
         if self.config.get("model"): payload["model"]=self.config["model"]
         payload.update(self.config.get("extra_body") or {})
