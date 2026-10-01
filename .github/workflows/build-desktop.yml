@@ -37,7 +37,7 @@ jobs:
           pip install pyinstaller
       - name: Build Windows EXE
         run: |
-          pyinstaller --noconfirm --clean --onefile --name KDP-AI-Factory-Windows --add-data "kdp_factory/static;kdp_factory/static" packaging/launcher.py
+          pyinstaller --noconfirm --clean --onefile --name KDP-AI-Factory-Windows --add-data "kdp_factory/static;kdp_factory/static" --collect-all kdp_factory packaging/launcher.py
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
@@ -71,7 +71,7 @@ jobs:
           pip install pyinstaller
       - name: Build Linux executable
         run: |
-          pyinstaller --noconfirm --clean --onefile --name KDP-AI-Factory-Linux --add-data "kdp_factory/static:kdp_factory/static" packaging/launcher.py
+          pyinstaller --noconfirm --clean --onefile --name KDP-AI-Factory-Linux --add-data "kdp_factory/static:kdp_factory/static" --collect-all kdp_factory packaging/launcher.py
           chmod +x dist/KDP-AI-Factory-Linux
       - name: Upload Linux build
         uses: actions/upload-artifact@v4
