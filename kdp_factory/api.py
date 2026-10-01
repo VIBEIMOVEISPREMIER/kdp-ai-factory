@@ -211,6 +211,7 @@ def project_import(project_id:str,req:ImportRequest):
  if not p:raise HTTPException(404,"Projeto não encontrado")
  data=import_file(req.path);src=Path(req.path);dest=project_dir(project_id)/"imports"/src.name;dest.write_bytes(src.read_bytes())
  (project_dir(project_id)/"imports"/(src.stem+".txt")).write_text(normalize_to_text(data),encoding="utf-8")
+ persist_project(project_id)
  return {"ok":True,"filename":src.name,"type":data.get("type")}
 class OutlineRequest(BaseModel): brief:str=Field(min_length=1);chapters:int=10;model:str|None=None
 @app.post("/api/projects/{project_id}/outline")
@@ -223,7 +224,10 @@ def create_manuscript(project_id:str,payload:dict):
  except Exception as e:raise HTTPException(400,str(e))
 @app.post("/api/projects/{project_id}/metadata")
 def create_metadata(project_id:str,payload:dict):
- try:return metadata(project_id,payload.get("description",""),payload.get("audience",""))
+ try:
+  result=metadata(project_id,payload.get("description",""),payload.get("audience",""))
+  persist_project(project_id)
+  return result
  except Exception as e:raise HTTPException(400,str(e))
 
 @app.post("/api/projects/{project_id}/export")
