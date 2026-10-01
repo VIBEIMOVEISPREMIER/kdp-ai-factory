@@ -6,9 +6,18 @@ Open-source AI publishing factory for creating, editing, illustrating, formattin
 
 ## What it does
 
-The Factory is designed as a modular editorial workstation for children's books, fiction, educational books, workbooks, journals, planners, notebooks, cookbooks, poetry, coloring books and custom editorial projects.
+The Factory is designed as a modular editorial workstation for children's books, fiction, educational books, workbooks, journals, planners, notebooks, cookbooks, poetry, coloring books and custom editorial projects. The selected book type is intended to drive the appropriate project settings, layout and export requirements.
 
-The pipeline covers briefing, outline, manuscript, revision, assets, layout, cover, KDP validation and export.
+The pipeline covers briefing, book type, outline, manuscript, revision, assets, layout, cover, KDP validation and export.
+
+## Publishing formats
+
+The project is designed around two main publishing paths:
+
+- **Print books:** interior and cover files prepared according to the selected KDP print configuration.
+- **eBooks/Kindle:** digital files and image assets prepared for electronic publication, with requirements that differ from print.
+
+KDP requirements can vary by marketplace, book type, trim size, bleed, color/interior configuration and publication format. The Factory provides preparation and validation; the final requirements shown by Amazon KDP should always be checked before publishing.
 
 ## Open-source principles
 
@@ -22,9 +31,15 @@ The pipeline covers briefing, outline, manuscript, revision, assets, layout, cov
 - Local projects and checkpoints.
 - Large AI model weights are never bundled with the repository.
 
-## Windows installation
+## Windows distribution and installation
 
 See [docs/INSTALL_WINDOWS.md](docs/INSTALL_WINDOWS.md).
+
+### Ready-to-use desktop build
+
+The packaged Windows application can be distributed as a standalone executable/installer. End users do not need to install Python or Node.js just to run the packaged application.
+
+### Development from source
 
 Basic PowerShell flow:
 
@@ -38,12 +53,16 @@ kdp-factory doctor
 kdp-factory start
 ~~~
 
-The dashboard can be run separately from apps/dashboard:
+The dashboard can be run separately from `apps/dashboard` during development:
 
 ~~~powershell
 npm install
 npm run dev
 ~~~
+
+## Linux distribution
+
+A Linux desktop binary can also be built from the repository. Source installation uses the Python requirements and the same `kdp-factory` CLI.
 
 ## Trial and licensing
 
@@ -59,15 +78,36 @@ Read [docs/LICENSING.md](docs/LICENSING.md).
 
 ## Payments
 
-The official payment flow supports USDT on BNB Smart Chain (BSC), BNB on BNB Smart Chain, and a lifetime license price of US$50.
+The official license price is **US$50 for a lifetime license**.
+
+The customer does not have to use Bybit. A compatible wallet or exchange capable of sending the selected asset on BSC may be used.
+
+The official payment flow supports USDT on BNB Smart Chain (BSC), BNB on BNB Smart Chain, and a lifetime license price of US$50. Customers can pay from a compatible wallet or exchange; Bybit is optional.
 
 Official receiving address:
 
 0x09fa433f8df884356bbb8a1afe1fb11bea3e12e5
 
-Payment verification must validate the network, asset, destination address, amount, transaction hash, uniqueness and blockchain confirmation before issuing a license.
+Payment verification must validate the network, asset, destination address, eligible amount, transaction hash, uniqueness and required blockchain confirmations before issuing a license.
 
-Bybit API credentials are server-only secrets. They are never shipped to clients.
+### Simple customer payment flow
+
+1. Choose USDT or BNB.
+2. Select the **BSC / BNB Smart Chain** network.
+3. Copy the official payment address.
+4. Send the required amount.
+5. Paste the TXID/hash.
+6. Request payment verification.
+7. The server verifies the transaction directly on BSC.
+8. After confirmation, the lifetime license is issued.
+
+**Important:** the required BSC network must be shown clearly before payment. Sending an asset through the wrong network can result in loss of funds.
+
+### Bybit
+
+Bybit is optional and may be used by the operator for managing received crypto assets. It is not the customer's required payment platform.
+
+Bybit is an optional operational tool for managing received crypto assets. It is not required for the customer to make a payment. Payment verification is performed directly on BNB Smart Chain (BSC).
 
 ## Architecture
 
@@ -91,7 +131,7 @@ PRIVATE OFFICIAL REPOSITORY
    +-- Trial database
    +-- Payment verification
    +-- BSC secondary verification
-   +-- Bybit integration
+   +-- Optional exchange/operational integration
    +-- License database
    +-- Private signing key
    +-- Production secrets
@@ -99,7 +139,7 @@ PRIVATE OFFICIAL REPOSITORY
 
 ## Security
 
-Do not commit Bybit API keys, Bybit API secrets, private signing keys, production database credentials or server environment files.
+Do not commit exchange API keys/secrets, private signing keys, production database credentials or server environment files.
 
 Use environment variables and secret storage on the private licensing server.
 
@@ -125,7 +165,7 @@ kdp-factory models
 
 ## Project status
 
-The native Windows path, public licensing client, official licensing API boundary and Render deployment configuration are included.
+The native Windows path, public licensing client, official licensing API boundary, Render deployment configuration and desktop build workflows are included.
 
 The production payment verifier is maintained in the separate private license-server repository. Real payments should only be accepted after the private service, secrets, blockchain verification and end-to-end payment tests are configured.
 
