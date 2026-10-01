@@ -101,9 +101,9 @@ begin
     '$disk=(Get-PSDrive -Name C).Free/1GB;' +
     '$gpus=Get-CimInstance Win32_VideoController;' +
     '$vram=($gpus | Measure-Object -Property AdapterRAM -Maximum).Maximum/1GB;' +
-    'if($ram -lt 16){exit 10};' +
-    'if($disk -lt 40){exit 12};' +
-    'if($vram -gt 0 -and $vram -lt 4){exit 11};' +
+    'if($ram -lt 8){exit 10};' +
+    'if($disk -lt 10){exit 12};' +
+    'if($vram -gt 0 -and $vram -lt 2){exit 11};' +
     'exit 0"';
   if Exec(PS, Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
     Result := ResultCode
