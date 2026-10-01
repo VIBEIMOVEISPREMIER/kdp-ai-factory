@@ -17,6 +17,8 @@ class AIRouter:
                 cfg=get_provider(p["id"])
                 if cfg: candidates.append((int(cfg.get("priority",100)),OpenAICompatibleTextProvider(cfg)))
         return candidates
+    def generate(self,prompt,model=None,**kwargs):
+        return self.text(prompt,model,**kwargs)
     def text(self,prompt,model=None,**kwargs):
         errors=[]
         for _,provider in self._text_candidates(model):
