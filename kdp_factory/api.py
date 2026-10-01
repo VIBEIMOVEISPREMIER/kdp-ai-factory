@@ -26,7 +26,7 @@ class TextRequest(BaseModel): prompt:str=Field(min_length=1);model:str|None=None
 class ImportRequest(BaseModel): path:str
 class ValidateRequest(BaseModel): spec:dict;pdf_path:str|None=None
 class CheckpointRequest(BaseModel): stage:str;state:dict={}
-class PaymentRequest(BaseModel): tx_id:str=Field(min_length=20,max_length=200);asset:str=Field(pattern=r"^(USDT|BNB)$")
+class PaymentRequest(BaseModel): tx_id:str=Field(min_length=20,max_length=200);asset:str=Field(pattern=r"^(USDT|BNB)$");referral_code:str=""
 @app.on_event("startup")
 def startup(): init_db()
 @app.get("/api/health")
@@ -159,7 +159,7 @@ def activate_license(payload:LicenseActivationRequest):
  except Exception as e:raise HTTPException(400,str(e))
 @app.post("/api/license/payment")
 def payment_license(payload:PaymentRequest):
- try:return verify_payment_and_issue_license(payload.tx_id,payload.asset)
+ try:return verify_payment_and_issue_license(payload.tx_id,payload.asset,payload.referral_code.strip())
  except Exception as e:raise HTTPException(400,str(e))
 @app.post("/api/projects")
 def new_project(payload:ProjectCreate):
