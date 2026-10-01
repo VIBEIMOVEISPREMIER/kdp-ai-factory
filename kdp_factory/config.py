@@ -15,6 +15,8 @@ PROJECTS_DIR = DATA_DIR / "projects"
 DB_PATH = DATA_DIR / "factory.sqlite3"
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/")
 COMFYUI_URL = os.getenv("COMFYUI_BASE_URL", "http://127.0.0.1:8188").rstrip("/")
+KDP_ENGINE_URL = os.getenv("KDP_ENGINE_URL", "").rstrip("/")
+KDP_ENGINE_TOKEN = os.getenv("KDP_ENGINE_TOKEN", "")
 LICENSE_SERVER_URL = os.getenv("KDP_LICENSE_SERVER_URL", "https://kdp-ai-factory-license-server.onrender.com").rstrip("/")
 LICENSE_STATE_PATH = DATA_DIR / "license_state.json"
 LICENSE_PUBLIC_KEY_B64 = os.getenv("KDP_LICENSE_PUBLIC_KEY_B64", "YePeDo6HujQPXrIK+ffeYHzxaeV8QzdF41kFFCF/4Yo=")
