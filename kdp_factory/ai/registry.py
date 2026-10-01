@@ -2,13 +2,17 @@ from .ollama import OllamaProvider
 from .comfyui import ComfyUIProvider
 from .remote import RemoteEngineTextProvider, RemoteEngineImageProvider
 from ..config import KDP_ENGINE_URL, KDP_ENGINE_TOKEN
+from .remote_config import load
 
 class Registry:
     def __init__(self):
         self.text=OllamaProvider()
         self.image=ComfyUIProvider()
-        if KDP_ENGINE_URL:
-            self.configure_remote(KDP_ENGINE_URL,KDP_ENGINE_TOKEN)
+        saved=load()
+        url=KDP_ENGINE_URL or saved.get("url","")
+        token=KDP_ENGINE_TOKEN or saved.get("token","")
+        if url:
+            self.configure_remote(url,token)
     def configure_remote(self,url:str,token:str=""):
         if url:
             self.text=RemoteEngineTextProvider(url,token)
