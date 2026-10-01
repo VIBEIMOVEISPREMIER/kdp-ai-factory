@@ -80,7 +80,8 @@ def test_ai_provider(payload:dict):
             return {"ok":True,"kind":"video","message":"Configuração válida. O teste completo será feito na primeira geração."}
         if kind in ("image",):
             return {"ok":True,"kind":"image","message":"Configuração válida. O teste completo será feito na primeira geração."}
-        result=registry.router.text("Responda somente: OK", model=cfg.get("model"))
+        from .ai.user_providers import OpenAICompatibleTextProvider
+        result=OpenAICompatibleTextProvider(cfg).generate("Responda somente: OK", model=cfg.get("model"), timeout=30)
         return {"ok":True,"kind":"text","model":result.model,"message":"API respondeu corretamente."}
     except Exception as e:
         raise HTTPException(502,str(e))
