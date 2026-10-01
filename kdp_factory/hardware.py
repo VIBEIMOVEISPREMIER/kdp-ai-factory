@@ -29,7 +29,7 @@ def _gpu_vram_gb() -> float | None:
 
 def detect() -> HardwareProfile:
     ram = round(psutil.virtual_memory().total / (1024**3), 1)
-    drive = os.environ.get("SystemDrive", "C:\") if os.name == "nt" else "/"
+    drive = os.environ.get("SystemDrive", "C:\\") if os.name == "nt" else "/"
     free = round(shutil.disk_usage(drive).free / (1024**3), 1)
     vram = _gpu_vram_gb()
     if ram < 8:
