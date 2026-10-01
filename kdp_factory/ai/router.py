@@ -3,15 +3,22 @@ from .base import AIResponse
 from .ollama import OllamaProvider
 from .comfyui import ComfyUIProvider
 from .user_providers import list_providers as stored_providers, OpenAICompatibleTextProvider, UserImageAPIProvider, get_provider
+from .remote import RemoteEngineTextProvider, RemoteEngineImageProvider
 
 class AIRouter:
     def __init__(self):
         self.local_text=OllamaProvider()
         self.local_image=ComfyUIProvider()
+        self.remote_text=None
+        self.remote_image=None
+    def configure_remote(self,url:str,token:str=""):
+        self.remote_text=RemoteEngineTextProvider(url,token) if url else None
+        self.remote_image=RemoteEngineImageProvider(url,token) if url else None
     def _text_candidates(self, requested=None):
         candidates=[]
         if self.local_text.available():
             candidates.append((0,self.local_text))
+        if self.remote_text and self.remote_text.available(): candidates.append((10,self.remote_text))
         for p in sorted(stored_providers(), key=lambda x:int(x.get("priority",100))):
             if p.get("kind","text") in ("text","both") and p.get("key_configured"):
                 cfg=get_provider(p["id"])
@@ -28,6 +35,7 @@ class AIRouter:
     def image_candidates(self):
         candidates=[]
         if self.local_image.available(): candidates.append(self.local_image)
+        if self.remote_image and self.remote_image.available(): candidates.append(self.remote_image)
         for p in stored_providers():
             if p.get("kind") in ("image","both") and p.get("key_configured"):
                 cfg=get_provider(p["id"])
@@ -43,4 +51,4 @@ class AIRouter:
         text=[{"name":"ollama","kind":"local","available":self.local_text.available(),"models":self.local_text.models()}]
         for p in stored_providers():
             text.append({"id":p["id"],"name":p.get("name",p["id"]),"kind":p.get("kind","text"),"key_configured":p.get("key_configured",False),"model":p.get("model",""),"priority":p.get("priority",100)})
-        return {"text":text,"image":{"comfyui_local":self.local_image.available(),"providers":[x for x in text if x["kind"] in ("image","both")]}}
+        return {"text":text,"image":{"comfyui_local":self.local_image.available(),"remote_engine":bool(self.remote_image and self.remote_image.available()),"providers":[x for x in text if x["kind"] in ("image","both")]}}
