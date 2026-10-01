@@ -6,24 +6,21 @@ import sys
 import threading
 import time
 import urllib.request
-import webbrowser
 from pathlib import Path
 
 import uvicorn
+import webview
 from kdp_factory.cli import app
 from kdp_factory.db import init_db
 
 HOST = "127.0.0.1"
-PORT = 8000
+PORT = int(os.environ.get("KDP_FACTORY_PORT", "8000"))
 URL = f"http://{HOST}:{PORT}/"
 
 
 def _log_path() -> Path:
     base = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA")
-    if base:
-        folder = Path(base) / "KDP-AI-Factory"
-    else:
-        folder = Path.home() / ".kdp-ai-factory"
+    folder = Path(base) / "KDP-AI-Factory" if base else Path.home() / ".kdp-ai-factory"
     folder.mkdir(parents=True, exist_ok=True)
     return folder / "launcher.log"
 
@@ -46,37 +43,27 @@ def _show_error(message: str) -> None:
         root.withdraw()
         messagebox.showerror(
             "KDP AI Factory",
-            f"O aplicativo não conseguiu iniciar.\n\n{message}\n\n"
-            f"Log: {LOG_PATH}",
+            f"O aplicativo não conseguiu iniciar.\n\n{message}\n\nLog: {LOG_PATH}",
         )
         root.destroy()
     except Exception:
         logging.exception("Could not show error dialog")
 
 
-def _open_browser_when_ready() -> None:
-    deadline = time.time() + 30
+def _wait_for_server(timeout: float = 30.0) -> bool:
+    deadline = time.time() + timeout
     while time.time() < deadline:
         try:
             with urllib.request.urlopen(URL, timeout=2) as response:
                 if 200 <= response.status < 500:
-                    webbrowser.open(URL)
-                    return
+                    return True
         except Exception:
-            time.sleep(0.5)
-
-    logging.error("Local dashboard did not become available within 30 seconds")
-    _show_error(
-        f"O Dashboard local não respondeu em 30 segundos.\n"
-        f"Abra {URL} manualmente ou consulte o log."
-    )
+            time.sleep(0.25)
+    return False
 
 
-def _run_desktop() -> None:
+def _serve() -> None:
     try:
-        logging.info("Starting KDP AI Factory desktop")
-        init_db()
-        threading.Thread(target=_open_browser_when_ready, daemon=True).start()
         uvicorn.run(
             "kdp_factory.api:app",
             host=HOST,
@@ -84,6 +71,40 @@ def _run_desktop() -> None:
             reload=False,
             log_config=None,
         )
+    except Exception:
+        logging.exception("Local API server stopped unexpectedly")
+
+
+def _run_desktop() -> None:
+    server_thread = None
+    try:
+        logging.info("Starting KDP AI Factory desktop")
+        init_db()
+
+        server_thread = threading.Thread(target=_serve, daemon=True, name="kdp-local-api")
+        server_thread.start()
+
+        if not _wait_for_server():
+            raise RuntimeError(
+                f"O servidor local não respondeu em {URL} dentro de 30 segundos."
+            )
+
+        logging.info("Local API/dashboard ready at %s", URL)
+
+        # The Windows app is a native desktop window. It never opens the SaaS URL
+        # and never downloads the web application. The bundled dashboard is served
+        # only by the local FastAPI process.
+        webview.create_window(
+            "KDP AI Factory",
+            URL,
+            width=1440,
+            height=900,
+            min_size=(1100, 700),
+            resizable=True,
+            text_select=True,
+        )
+        webview.start()
+        logging.info("Desktop window closed")
     except Exception as exc:
         logging.exception("KDP AI Factory failed to start")
         _show_error(f"{type(exc).__name__}: {exc}")
