@@ -1,0 +1,78 @@
+name: Windows Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pyinstaller
+
+      - name: Test Python
+        run: |
+          python -m compileall kdp_factory
+          python -m pytest -q
+
+      - name: Build dashboard
+        working-directory: apps/dashboard
+        run: |
+          npm ci
+          npm run build
+
+      - name: Copy dashboard
+        shell: pwsh
+        run: |
+          if (Test-Path "kdp_factory/static") { Remove-Item "kdp_factory/static" -Recurse -Force }
+          New-Item -ItemType Directory -Path "kdp_factory/static" -Force | Out-Null
+          Copy-Item "apps/dashboard/dist/*" "kdp_factory/static/" -Recurse -Force
+
+      - name: Build executable
+        run: |
+          pyinstaller --noconfirm --clean --onefile --windowed --name KDP-AI-Factory kdp_factory/desktop.py
+          .\dist\KDP-AI-Factory.exe --compatibility-check
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path release -Force | Out-Null
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "packaging\KDP-AI-Factory.iss"
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: KDP-AI-Factory-Windows
+          path: release/KDP-AI-Factory-Setup.exe
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/KDP-AI-Factory-Setup.exe
+          generate_release_notes: true
