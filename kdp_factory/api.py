@@ -14,6 +14,8 @@ from .export.engine import ExportEngine
 from .bookflow import generate_outline,generate_manuscript,metadata
 from .licensing.client import status as license_status,activate_with_license,verify_payment_and_issue_license
 from .licensing.models import LicenseActivationRequest
+from .hardware import as_dict as hardware_profile
+from .ai.image_providers import list_providers, upsert_provider
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
 class ProjectCreate(BaseModel): name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR"
 class TextRequest(BaseModel): prompt:str=Field(min_length=1);model:str|None=None
@@ -27,6 +29,15 @@ def startup(): init_db()
 def health(): return {"ok":True,"service":"kdp-ai-factory","version":"1.0.0"}
 @app.get("/api/doctor")
 def doctor(): return run_doctor()
+@app.get("/api/hardware")
+def hardware(): return hardware_profile()
+@app.get("/api/image-providers")
+def image_providers():
+ return [{k:v for k,v in p.items() if k != "api_key"} for p in list_providers()]
+@app.post("/api/image-providers")
+def save_image_provider(payload:dict):
+ if not payload.get("base_url"): raise HTTPException(400,"base_url é obrigatório")
+ return {k:v for k,v in upsert_provider(payload).items() if k != "api_key"}
 @app.get("/api/ai")
 def ai_status(): return registry.status()
 @app.get("/api/models")
