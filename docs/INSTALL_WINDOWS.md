@@ -2,7 +2,11 @@
 
 O projeto pode ser executado nativamente no Windows. Docker não é obrigatório.
 
-## Requisitos
+## Para usuário final
+
+A versão empacotada para Windows pode ser distribuída como executável/instalador. O usuário final não precisa instalar Python ou Node.js apenas para executar a versão empacotada.
+
+## Requisitos de desenvolvimento
 
 - Windows 10/11 64-bit
 - Python 3.11 ou superior
