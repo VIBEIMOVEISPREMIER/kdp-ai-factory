@@ -39,19 +39,19 @@ Name: "fr"; MessagesFile: "compiler:Languages\French.isl"
 Name: "de"; MessagesFile: "compiler:Languages\German.isl"
 
 [CustomMessages]
-pt.IncompatibleTitle=Computador incompatível com o KDP AI Factory
-pt.IncompatibleRAM=Seu computador tem menos de 16 GB de RAM. O KDP AI Factory usa IA local e precisa de memória suficiente para trabalhar com livros, modelos e imagens sem travar.
-pt.IncompatibleGPU=Sua placa de vídeo tem menos de 4 GB de memória de vídeo. Para a geração local de imagens, este computador não atende ao perfil mínimo recomendado.
-pt.IncompatibleDisk=Há menos de 40 GB livres no disco do sistema. A instalação e os modelos locais precisam de espaço adicional.
-pt.IncompatibleGeneric=O computador não atende aos requisitos mínimos do KDP AI Factory. A instalação foi interrompida para evitar uma experiência instável.
-pt.IncompatibleDetails=Requisitos mínimos recomendados: Windows 10/11 64 bits, 16 GB de RAM, GPU com pelo menos 4 GB de VRAM quando detectável e 40 GB livres.
+pt.IncompatibleTitle=Modo de compatibilidade do KDP AI Factory
+pt.IncompatibleRAM=Seu computador tem pouca memória para alguns recursos de IA local. O aplicativo pode continuar em Modo Compatibilidade, com os recursos pesados desativados.
+pt.IncompatibleGPU=Sua placa de vídeo tem pouca memória de vídeo para geração local de imagens. Você pode continuar usando uma VPS GPU ou uma API externa.
+pt.IncompatibleDisk=Há menos de 10 GB livres no disco do sistema. Libere espaço antes de instalar.
+pt.IncompatibleGeneric=O computador está abaixo do perfil recomendado para IA local. Você pode continuar com recursos leves e conectar uma VPS GPU ou API externa.
+pt.IncompatibleDetails=Mínimo para instalar: Windows 10/11 64 bits, 8 GB de RAM e 10 GB livres. Os recursos de IA local serão ajustados ao hardware.
 
-en.IncompatibleTitle=Computer not compatible with KDP AI Factory
-en.IncompatibleRAM=This computer has less than 16 GB of RAM. KDP AI Factory runs local AI and needs enough memory to work with books, models and images without becoming unstable.
-en.IncompatibleGPU=The detected graphics adapter has less than 4 GB of video memory. This computer does not meet the recommended minimum profile for local image generation.
-en.IncompatibleDisk=There is less than 40 GB of free space on the system drive. Installation and local models require additional space.
-en.IncompatibleGeneric=This computer does not meet the minimum KDP AI Factory requirements. Installation was stopped to avoid an unstable experience.
-en.IncompatibleDetails=Recommended minimum: 64-bit Windows 10/11, 16 GB RAM, GPU with at least 4 GB VRAM when detectable, and 40 GB free space.
+en.IncompatibleTitle=KDP AI Factory compatibility mode
+en.IncompatibleRAM=This computer has limited memory for some local AI features. The application can continue in Compatibility Mode with heavy features disabled.
+en.IncompatibleGPU=The detected graphics adapter has limited video memory for local image generation. You can continue with a GPU VPS or an external image API.
+en.IncompatibleDisk=There is less than 10 GB of free space on the system drive. Free some space before installing.
+en.IncompatibleGeneric=This computer is below the recommended profile for local AI. You can continue in Compatibility Mode and connect a GPU VPS or external API.
+en.IncompatibleDetails=Installation minimum: 64-bit Windows 10/11, 8 GB RAM and 10 GB free space. AI capabilities are adjusted automatically.
 
 es.IncompatibleTitle=Ordenador no compatible con KDP AI Factory
 es.IncompatibleRAM=Este ordenador tiene menos de 16 GB de RAM. KDP AI Factory ejecuta IA local y necesita memoria suficiente para trabajar con libros, modelos e imágenes de forma estable.
