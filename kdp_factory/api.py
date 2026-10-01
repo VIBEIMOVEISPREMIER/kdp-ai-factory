@@ -137,6 +137,19 @@ def create_metadata(project_id:str,payload:dict):
  try:return metadata(project_id,payload.get("description",""),payload.get("audience",""))
  except Exception as e:raise HTTPException(400,str(e))
 
+@app.post("/api/projects/{project_id}/export")
+def export_book(project_id:str,payload:dict):
+ try:
+  fmt=str(payload.get("format","pdf")).lower()
+  return {"file":str(export_project(project_id,fmt,payload.get("author",""))),"format":fmt}
+ except Exception as e: raise HTTPException(400,str(e))
+
+@app.post("/api/projects/{project_id}/cover")
+def create_cover_file(project_id:str,payload:dict):
+ try:
+  return generate_cover(project_id,payload.get("author",""),payload.get("description",""),payload.get("pages"),payload.get("front_image"),payload.get("back_image"))
+ except Exception as e: raise HTTPException(400,str(e))
+
 
 # The packaged desktop build serves the dashboard locally when its static bundle exists.
 _static_dir = Path(__file__).resolve().parent / "static"
