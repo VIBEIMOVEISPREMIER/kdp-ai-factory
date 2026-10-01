@@ -11,7 +11,7 @@ if _USE_POSTGRES:
 
 def connect():
     if _USE_POSTGRES:
-        return psycopg.connect(os.environ["DATABASE_URL"], row_factory=dict_row)
+        return psycopg.connect(os.environ["DATABASE_URL"], row_factory=dict_row, connect_timeout=5)
     ensure_dirs()
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
