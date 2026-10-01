@@ -98,7 +98,7 @@ begin
   Params :=
     '-NoProfile -ExecutionPolicy Bypass -Command "' +
     '$ram=(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory/1GB;' +
-    '$disk=(Get-CimInstance Win32_LogicalDisk -Filter ''DeviceID=''''C:'''' '').FreeSpace/1GB;' +
+    '$disk=(Get-PSDrive -Name C).Free/1GB;' +
     '$gpus=Get-CimInstance Win32_VideoController;' +
     '$vram=($gpus | Measure-Object -Property AdapterRAM -Maximum).Maximum/1GB;' +
     'if($ram -lt 16){exit 10};' +
