@@ -107,3 +107,27 @@ class UserImageAPIProvider(ImageProvider):
         payload.update(self.config.get("extra_body") or {})
         r=httpx.post(url,json=payload,headers=headers,timeout=kwargs.get("timeout",900))
         r.raise_for_status(); return r.json()
+
+
+class UserVideoAPIProvider:
+    """Generic remote video provider. The API may return a URL or provider-specific JSON."""
+    def __init__(self, config):
+        self.config=config
+        self.name=config.get("name") or config.get("id") or "custom-video"
+    def available(self):
+        return bool(self.config.get("api_key") and self.config.get("base_url"))
+    def generate(self, prompt, **kwargs):
+        if not self.available():
+            raise RuntimeError(f"API de vídeo {self.name} não está configurada.")
+        base=self.config.get("base_url","").rstrip("/")
+        ep=self.config.get("endpoint","/v1/videos/generations")
+        url=f"{base}/{ep.lstrip('/')}"
+        headers={"Content-Type":"application/json","Authorization":f"Bearer {self.config['api_key']}"}
+        payload={"prompt":prompt}
+        if self.config.get("model"): payload["model"]=self.config["model"]
+        for k in ("duration","aspect_ratio","resolution","negative_prompt"):
+            if k in kwargs and kwargs[k] is not None: payload[k]=kwargs[k]
+        payload.update(self.config.get("extra_body") or {})
+        r=httpx.post(url,json=payload,headers=headers,timeout=kwargs.get("timeout",1800))
+        r.raise_for_status()
+        return r.json()
