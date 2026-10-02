@@ -241,7 +241,9 @@ def project_print_files(project_id:str):
 async def upload_print_files(project_id:str, files:list[UploadFile]=File(...)):
     if not get_project(project_id): raise HTTPException(404,"Projeto não encontrado")
     try:
-        result=add_print_files(project_id, files, [f.filename or "arquivo" for f in files])
+        names=[f.filename or "arquivo" for f in files]
+        payload=[await f.read() for f in files]
+        result=add_print_files(project_id, payload, names)
         persist_project(project_id)
         return result
     except ValueError as e: raise HTTPException(400,str(e))
