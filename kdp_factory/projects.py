@@ -41,7 +41,7 @@ def create_project(name: str, book_type: str, language: str, **overrides):
     stamp = now()
     folder = project_dir(pid)
     for d in ("manuscript", "images", "exports", "logs", "imports", "cover", "validation"):
-        (folder / d).mkdir(exist_ok=True)
+        (folder / d).mkdir(parents=True, exist_ok=True)
 
     tpl = template_for(book_type)
     spec = {"title": name, "book_type": book_type, "language": language, **tpl, **overrides}
