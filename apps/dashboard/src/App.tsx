@@ -36,13 +36,13 @@ export default function App(){
     const id=await ir.json();
     if(!ir.ok)throw new Error(id.detail||"O projeto foi criado, mas não foi possível importar os PDFs/arquivos de impressão.");
     const pids=(id.files||[]).map((x:any)=>x.id);
-    const pc=printCover!==null?pids[Number(printCover)]||null:null;
-    const pb=printBack!==null?pids[Number(printBack)]||null:null;
-    const pi=printInterior.map(k=>pids[Number(k)]||null).filter(Boolean);
-    const rr=await fetch(API+"/api/projects/"+p.id+"/print-files/role",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:pc||pb||pi[0]||"",role:pc?"cover":pb?"back_cover":"interior"})});
-    if((pc||pb||pi[0])&&!rr.ok)throw new Error("Os PDFs foram importados, mas não foi possível salvar as funções.");
-    if(pi.length>1||((pc||pb)&&pi.length)){
-      for(const rid of pi.slice(pc||pb?1:1)){await fetch(API+"/api/projects/"+p.id+"/print-files/role",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:rid,role:"interior"})})}
+    const roleRequests:any[]=[];
+    if(printCover!==null&&pids[Number(printCover)])roleRequests.push({id:pids[Number(printCover)],role:"cover"});
+    if(printBack!==null&&pids[Number(printBack)])roleRequests.push({id:pids[Number(printBack)],role:"back_cover"});
+    printInterior.forEach(k=>{const rid=pids[Number(k)];if(rid)roleRequests.push({id:rid,role:"interior"})});
+    for(const role of roleRequests){
+      const rr=await fetch(API+"/api/projects/"+p.id+"/print-files/role",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(role)});
+      if(!rr.ok)throw new Error("Os PDFs foram importados, mas não foi possível salvar as funções.");
     }
    }
    if(photoDraft.length){
@@ -131,6 +131,12 @@ function PhotoDraft({files,setFiles,cover,setCover,back,setBack,interior,setInte
   if(valid.length<incoming.length)alert("Algumas imagens foram ignoradas. Use JPG, PNG ou WEBP.");
   setFiles([...files,...valid]);e.target.value="";
  }
+ function removePrint(i:number){
+  setPrintFiles(printFiles.filter((_,n)=>n!==i));
+  const shift=(v:string|null)=>v===null?null:(Number(v)===i?null:Number(v)>i?String(Number(v)-1):v);
+  setPrintCover(shift(printCover)); setPrintBack(shift(printBack));
+  setPrintInterior(printInterior.filter(x=>Number(x)!==i).map(x=>Number(x)>i?String(Number(x)-1):x));
+ }
  function addPrint(e:React.ChangeEvent<HTMLInputElement>){
   const incoming=Array.from(e.target.files||[]);const valid=incoming.filter(f=>f.type==="application/pdf");
   if(printFiles.length+valid.length>100){alert("O limite é de 100 arquivos de impressão por projeto.");return}
@@ -143,7 +149,7 @@ function PhotoDraft({files,setFiles,cover,setCover,back,setBack,interior,setInte
  {files.length===0?<div className="resultBox">Opcional: você pode criar o livro sem fotos. Se adicionar fotos, elas serão preparadas automaticamente sem esticar ou deformar a imagem.</div>:<div className="photoGrid">{files.map((f,i)=><div className="photoCard" key={i}><img src={urls[i]} alt={f.name}/><b>{f.name}</b><div className="photoActions"><button className={cover===String(i)?"primary small":"outline small"} onClick={()=>setCover(cover===String(i)?null:String(i))}>Capa</button><button className={back===String(i)?"primary small":"outline small"} onClick={()=>setBack(back===String(i)?null:String(i))}>Contracapa</button><button className={interior.includes(String(i))?"primary small":"outline small"} onClick={()=>toggleInterior(i)}>Interior</button><button className="outline small danger" onClick={()=>remove(i)}>Excluir</button></div></div>)}</div>}
  <small>{files.length}/100 fotos preparadas • {cover!==null?"capa definida":"capa não definida"} • {back!==null?"contracapa definida":"contracapa não definida"} • {interior.length} no interior</small>
  <div className="sectionTitle" style={{marginTop:22}}><div><h3>PDFs e arquivos montados</h3><p>Adicione somente PDFs já montados. As fotos são adicionadas exclusivamente na seção acima para evitar duplicidade.</p></div><label className="primary small" style={{cursor:"pointer"}}>Adicionar PDFs<input type="file" accept=".pdf,application/pdf" multiple hidden onChange={addPrint}/></label></div>
- {printFiles.length===0?<div className="resultBox">Opcional: nenhum PDF montado adicionado. As fotos ficam exclusivamente na seção acima.</div>:<div className="printFileList">{printFiles.map((f,i)=><div className="printFileRow" key={i}><div className="projectIcon"><Printer/></div><div className="projectInfo"><b>{i+1}. {f.name}</b><span>{(f.size/1024/1024).toFixed(1)} MB • {printCover===String(i)?"Capa":printBack===String(i)?"Contracapa":printInterior.includes(String(i))?"Interior":"Sem função"}</span></div><button className={printCover===String(i)?"primary small":"outline small"} onClick={()=>{setPrintCover(printCover===String(i)?null:String(i));setPrintBack(printBack===String(i)?null:printBack);}}>Capa</button><button className={printBack===String(i)?"primary small":"outline small"} onClick={()=>{setPrintBack(printBack===String(i)?null:String(i));setPrintCover(printCover===String(i)?null:printCover);}}>Contracapa</button><button className={printInterior.includes(String(i))?"primary small":"outline small"} onClick={()=>setPrintInterior(printInterior.includes(String(i))?printInterior.filter(x=>x!==String(i)):[...printInterior,String(i)])}>Interior</button><button className="outline small danger" onClick={()=>setPrintFiles(printFiles.filter((_,n)=>n!==i))}>Excluir</button></div>)}</div>}
+ {printFiles.length===0?<div className="resultBox">Opcional: nenhum PDF montado adicionado. As fotos ficam exclusivamente na seção acima.</div>:<div className="printFileList">{printFiles.map((f,i)=><div className="printFileRow" key={i}><div className="projectIcon"><Printer/></div><div className="projectInfo"><b>{i+1}. {f.name}</b><span>{(f.size/1024/1024).toFixed(1)} MB • {printCover===String(i)?"Capa":printBack===String(i)?"Contracapa":printInterior.includes(String(i))?"Interior":"Sem função"}</span></div><button className={printCover===String(i)?"primary small":"outline small"} onClick={()=>{setPrintCover(printCover===String(i)?null:String(i));setPrintBack(printBack===String(i)?null:printBack);}}>Capa</button><button className={printBack===String(i)?"primary small":"outline small"} onClick={()=>{setPrintBack(printBack===String(i)?null:String(i));setPrintCover(printCover===String(i)?null:printCover);}}>Contracapa</button><button className={printInterior.includes(String(i))?"primary small":"outline small"} onClick={()=>setPrintInterior(printInterior.includes(String(i))?printInterior.filter(x=>x!==String(i)):[...printInterior,String(i)])}>Interior</button><button className="outline small danger" onClick={()=>removePrint(i)}>Excluir</button></div>)}</div>}
  <small>{printFiles.length}/100 arquivos PDF/impressão serão enviados junto com o projeto.</small></div>
 }
 
