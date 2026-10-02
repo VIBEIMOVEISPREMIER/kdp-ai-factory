@@ -48,21 +48,6 @@ export default function App(){
    const p=await r.json();
    if(!r.ok){alert(p.detail||"Ative a licença para continuar.");setView("system");return}
    createdProjectId=p.id;
-   if(printDraft.length){
-    const fd=new FormData();printDraft.forEach(f=>fd.append("files",f));
-    const ir=await fetch(API+"/api/projects/"+p.id+"/print-files",{method:"POST",body:fd});
-    const id=await ir.json();
-    if(!ir.ok)throw new Error(id.detail||"O projeto foi criado, mas não foi possível importar os PDFs/arquivos de impressão.");
-    const pids=(id.files||[]).map((x:any)=>x.id);
-    const roleRequests:any[]=[];
-    if(printCover!==null&&pids[Number(printCover)])roleRequests.push({id:pids[Number(printCover)],role:"cover"});
-    if(printBack!==null&&pids[Number(printBack)])roleRequests.push({id:pids[Number(printBack)],role:"back_cover"});
-    printInterior.forEach(k=>{const rid=pids[Number(k)];if(rid)roleRequests.push({id:rid,role:"interior"})});
-    for(const role of roleRequests){
-      const rr=await fetch(API+"/api/projects/"+p.id+"/print-files/role",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(role)});
-      if(!rr.ok)throw new Error("Os PDFs foram importados, mas não foi possível salvar as funções.");
-    }
-   }
    if(photoDraft.length){
     const fd=new FormData();photoDraft.forEach(f=>fd.append("files",f));
     const pr=await fetch(API+"/api/projects/"+p.id+"/photos",{method:"POST",body:fd});
