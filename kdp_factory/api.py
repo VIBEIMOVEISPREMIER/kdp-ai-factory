@@ -23,7 +23,7 @@ from .ai.user_providers import list_providers as list_ai_providers, upsert_provi
 from .web_persistence import restore_projects, persist_project, persistence_status
 from .config import LICENSE_SERVER_URL
 from .photo_manager import upload_photos, get_photo_manifest, update_photo_roles
-from .print_manager import add_files as add_print_files, manifest as print_manifest, reorder as reorder_print_files, build_print_pdf
+from .print_manager import add_files as add_print_files, manifest as print_manifest, reorder as reorder_print_files, remove_file as remove_print_file, build_print_pdf
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
 class ProjectCreate(BaseModel): name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR";subject:str="";edition:str="print"
 class TextRequest(BaseModel): prompt:str=Field(min_length=1);model:str|None=None
@@ -248,6 +248,15 @@ async def upload_print_files(project_id:str, files:list[UploadFile]=File(...)):
         return result
     except ValueError as e: raise HTTPException(400,str(e))
     except Exception as e: raise HTTPException(500,str(e))
+
+@app.delete("/api/projects/{project_id}/print-files/{file_id}")
+def delete_project_print_file(project_id:str,file_id:str):
+    if not get_project(project_id): raise HTTPException(404,"Projeto não encontrado")
+    try:
+        result=remove_print_file(project_id,file_id)
+        persist_project(project_id)
+        return result
+    except ValueError as e: raise HTTPException(404,str(e))
 
 @app.patch("/api/projects/{project_id}/print-files/order")
 def reorder_project_print_files(project_id:str,payload:dict):
