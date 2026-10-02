@@ -117,9 +117,40 @@ class OpenAICompatibleTextProvider(TextProvider):
             for k in ("temperature","top_p","max_tokens"):
                 if k in kwargs: payload[k]=kwargs[k]
 
-        r=httpx.post(self._url(selected_model),json=payload,headers=self._headers(),timeout=kwargs.get("timeout",300))
-        r.raise_for_status()
-        d=r.json()
+        # Gemini can return transient 429/500/502/503/504 errors.
+        # Retry briefly, then automatically try current fallback models.
+        models_to_try=[selected_model]
+        if self._is_gemini():
+            for fallback in ("gemini-3.5-flash-lite","gemini-3.8-flash","gemini-2.5-flash-lite"):
+                if fallback not in models_to_try:
+                    models_to_try.append(fallback)
+        last_error=None
+        d=None
+        for attempt_model in models_to_try:
+            attempt_payload=payload
+            if self._is_gemini() and attempt_model != selected_model:
+                attempt_payload={"contents":[{"role":"user","parts":[{"text":prompt}]}]}
+                if generation_config:
+                    attempt_payload["generationConfig"]=generation_config
+            for attempt in range(3):
+                try:
+                    r=httpx.post(self._url(attempt_model),json=attempt_payload,headers=self._headers(),timeout=kwargs.get("timeout",300))
+                    if r.status_code in (429,500,502,503,504) and attempt < 2:
+                        import time
+                        time.sleep(1.5 * (attempt + 1))
+                        continue
+                    r.raise_for_status()
+                    d=r.json()
+                    selected_model=attempt_model
+                    break
+                except Exception as exc:
+                    last_error=exc
+                    if attempt >= 2:
+                        break
+            if d is not None:
+                break
+        if d is None:
+            raise last_error or RuntimeError(f"{self.name} falhou sem resposta.")
 
         if self._is_gemini():
             candidates=d.get("candidates") or []
