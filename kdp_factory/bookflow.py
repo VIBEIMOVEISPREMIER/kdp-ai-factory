@@ -102,9 +102,9 @@ def run_stage(project_id, stage, model=None, author=""):
     if stage == "layout":
         spec = dict(p.get("spec") or {}); layout = {"trim_size": spec.get("trim_size"), "bleed": bool(spec.get("bleed")), "bleed_inches": spec.get("bleed_inches", 0.125), "margins": spec.get("margins", 0.5), "target_pages": spec.get("target_pages"), "language": p.get("language"), "book_type": p.get("book_type")}
         out = project_dir(project_id) / "layout.json"; out.write_text(json.dumps(layout, ensure_ascii=False, indent=2), encoding="utf-8"); checkpoint(project_id, "layout", layout); update_project(project_id, status="layout", progress=65); return {"stage": stage, "status": "layout", "progress": 65, "layout": layout}
-    if stage == "cover": return generate_cover(project_id, author=author)
+    if stage == "cover": return generate_cover(project_id, author=author or str(spec.get("author","")))
     if stage == "validation":
         issues = KDPValidator().validate_spec(dict(p.get("spec") or {})); result = {"ok": not any(x.level == "error" for x in issues), "issues": [x.__dict__ for x in issues]}
         out = project_dir(project_id) / "validation.json"; out.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"); checkpoint(project_id, "validation", result); update_project(project_id, status="validated" if result["ok"] else "validation_error", progress=90 if result["ok"] else 85); return {"stage": stage, **result, "progress": 90 if result["ok"] else 85}
-    if stage == "export": return {"stage": stage, "file": str(export_project(project_id, "pdf", author)), "status": "exported", "progress": 100}
+    if stage == "export": return {"stage": stage, "file": str(export_project(project_id, "pdf", author or str(spec.get("author","")))), "status": "exported", "progress": 100}
     raise ValueError("Etapa inválida.")
