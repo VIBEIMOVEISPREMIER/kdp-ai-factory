@@ -3,6 +3,7 @@ import base64,json,secrets,re
 from datetime import datetime,timezone
 from typing import Any
 import httpx
+import time
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from ..config import LICENSE_SERVER_URL,LICENSE_STATE_PATH,LICENSE_PUBLIC_KEY_B64
 from .machine import machine_id
@@ -68,7 +69,16 @@ def activate_with_license(license_token):
 def create_payment_intent(asset,machine=None):
  if not LICENSE_SERVER_URL:raise RuntimeError("Servidor de licenças não configurado.")
  mid=machine or machine_id();uid=_user_id();asset=asset.upper().strip()
- r=httpx.post(f"{LICENSE_SERVER_URL}/v1/payment/create-intent",json={"machine_id":mid,"user_id":uid,"asset":asset},timeout=15);r.raise_for_status();return r.json()
+ last_error=None
+ for attempt in range(3):
+  try:
+   r=httpx.post(f"{LICENSE_SERVER_URL}/v1/payment/create-intent",json={"machine_id":mid,"user_id":uid,"asset":asset},timeout=30)
+   r.raise_for_status()
+   return r.json()
+  except httpx.HTTPError as e:
+   last_error=e
+   if attempt<2: time.sleep(2)
+ raise RuntimeError("Servidor de licenças temporariamente indisponível. Tente novamente em alguns segundos.") from last_error
 
 def verify_payment_and_issue_license(tx_id,asset,machine=None,referral_code="",intent_id=None,intent_secret=None):
  if not LICENSE_SERVER_URL:raise RuntimeError("Servidor de licenças não configurado.")
