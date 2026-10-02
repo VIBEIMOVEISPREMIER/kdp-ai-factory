@@ -1,6 +1,5 @@
 from fastapi import FastAPI,HTTPException,UploadFile,File,Form
 from fastapi.responses import FileResponse
-from fastapi import BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel,Field
 from pathlib import Path
@@ -25,7 +24,7 @@ from .web_persistence import restore_projects, persist_project, persistence_stat
 from .config import LICENSE_SERVER_URL
 from .photo_manager import upload_photos, get_photo_manifest, update_photo_roles
 from .print_manager import add_files as add_print_files, manifest as print_manifest, reorder as reorder_print_files, remove_file as remove_print_file, set_role as set_print_role, build_print_pdf
-from .print_resize import prepare_uploads as prepare_print_uploads, output_path as print_output_path, cleanup as cleanup_print_output
+from .print_resize import prepare_uploads as prepare_print_uploads, output_path as print_output_path
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
 class ProjectCreate(BaseModel): name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR";subject:str="";edition:str="print";author:str="";content_mode:str="text_and_images";resolution:str="kdp_300dpi";publication_format:str="paperback";print_mode:str="kdp";cover_mode:str="images_only";ai_brief:str="";ai_script:str="";trim_size:str="6x9";print_settings:dict={}
 class TextRequest(BaseModel): prompt:str=Field(min_length=1);model:str|None=None
@@ -311,10 +310,9 @@ async def resize_print_files(files:list[UploadFile]=File(...), roles:str=Form(..
     except Exception as e: raise HTTPException(500,str(e))
 
 @app.get("/api/print/download/{token}/{filename}")
-def download_print_output(token:str,filename:str,background_tasks:BackgroundTasks):
+def download_print_output(token:str,filename:str):
     try: path=print_output_path(token,filename)
     except FileNotFoundError: raise HTTPException(404,"Arquivo temporário não encontrado.")
-    background_tasks.add_task(cleanup_print_output,token)
     return FileResponse(path,media_type="application/pdf",filename=path.name)
 
 @app.get("/api/projects/{project_id}/tasks")
