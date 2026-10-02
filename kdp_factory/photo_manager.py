@@ -17,7 +17,7 @@ def _manifest_path(project_id: str) -> Path:
 def get_photo_manifest(project_id: str):
     p = _manifest_path(project_id)
     if not p.exists():
-        return {"photos": [], "cover": None, "back_cover": None, "interior": []}
+        return {"photos": [], "cover": None, "back_cover": None, "interior": [], "ai_reference": []}
     return json.loads(p.read_text(encoding="utf-8"))
 
 
@@ -73,5 +73,9 @@ def update_photo_roles(project_id: str, payload: dict):
     data["cover"] = cover
     data["back_cover"] = back
     data["interior"] = interior
+    ai_reference = payload.get("ai_reference") or []
+    if not isinstance(ai_reference, list) or len(ai_reference) > MAX_PHOTOS: raise ValueError(f"O limite é de {MAX_PHOTOS} referências para a IA.")
+    if any(x not in valid for x in ai_reference): raise ValueError("Uma ou mais referências da IA não foram encontradas.")
+    data["ai_reference"] = ai_reference
     _save(project_id, data)
     return data
