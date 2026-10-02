@@ -30,11 +30,20 @@ class LayoutEngine:
                 if para.strip(): story += [Paragraph(para.replace("&","&amp;"),styles["BodyText"]),Spacer(1,8)]
             if interior_images and i < len(interior_images):
                 from PIL import Image as PILImage
-                iw,ih=PILImage.open(interior_images[i]).size
+                image_path=interior_images[i]
+                iw,ih=PILImage.open(image_path).size
                 maxw=(w-2*self.margins)*inch; maxh=(h-2*self.margins)*inch
                 scale=min(maxw/iw,maxh/ih)
-                story += [Spacer(1,12),RLImage(interior_images[i],width=iw*scale,height=ih*scale),PageBreak()]
+                story += [Spacer(1,12),RLImage(image_path,width=iw*scale,height=ih*scale),PageBreak()]
             else:
                 story.append(PageBreak())
+        # Any remaining selected photos become dedicated interior pages.
+        if interior_images and len(interior_images) > len(chapters):
+            from PIL import Image as PILImage
+            for image_path in interior_images[len(chapters):]:
+                iw,ih=PILImage.open(image_path).size
+                maxw=(w-2*self.margins)*inch; maxh=(h-2*self.margins)*inch
+                scale=min(maxw/iw,maxh/ih)
+                story += [RLImage(image_path,width=iw*scale,height=ih*scale),PageBreak()]
         doc.build(story)
         return output
