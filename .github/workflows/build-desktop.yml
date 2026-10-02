@@ -22,7 +22,7 @@ jobs:
           node-version: '20'
 
       - name: Build dashboard
-        working-directory: apps/dashboard
+        working-directory: apps/desktop
         run: |
           npm install
           npm run build
@@ -32,7 +32,7 @@ jobs:
         run: |
           if (Test-Path kdp_factory/static) { Remove-Item -Recurse -Force kdp_factory/static }
           New-Item -ItemType Directory -Force kdp_factory/static | Out-Null
-          Copy-Item -Recurse apps/dashboard/dist/* kdp_factory/static/
+          Copy-Item -Recurse apps/desktop/dist/* kdp_factory/static/
 
       - name: Install Python dependencies
         run: |
@@ -102,7 +102,7 @@ jobs:
         with:
           node-version: '20'
       - name: Build dashboard
-        working-directory: apps/dashboard
+        working-directory: apps/desktop
         run: |
           npm install
           npm run build
@@ -110,7 +110,7 @@ jobs:
         run: |
           rm -rf kdp_factory/static
           mkdir -p kdp_factory/static
-          cp -R apps/dashboard/dist/. kdp_factory/static/
+          cp -R apps/desktop/dist/. kdp_factory/static/
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
