@@ -55,7 +55,7 @@ def _image_bytes(path: Path, grayscale: bool) -> tuple[bytes, int, int]:
 def _append_pdf(src: fitz.Document, out: fitz.Document, page_no: int, target: fitz.Rect, mode: str) -> None:
     page = src[page_no]
     rect = _rect_fit(page.rect.width, page.rect.height, target, mode)
-    out_page = out.new_page(width=target.width + target.x0, height=target.height + target.y0)
+    out_page = out.new_page(width=target.width + (2 * target.x0), height=target.height + (2 * target.y0))
     out_page.show_pdf_page(rect, src, page_no, keep_proportion=True, overlay=True)
 
 def _render_pages(project_id: str, files: list[dict], options: dict) -> list[tuple[str, bytes]]:
