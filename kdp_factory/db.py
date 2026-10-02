@@ -2,7 +2,8 @@ import sqlite3
 import os
 from .config import DB_PATH, ensure_dirs
 
-_USE_POSTGRES = bool(os.getenv("DATABASE_URL", "").strip())
+_LOCAL_DESKTOP_MODE = os.getenv("KDP_FACTORY_LOCAL_MODE", "").strip().lower() in {"1", "true", "yes", "on"}
+_USE_POSTGRES = bool(os.getenv("DATABASE_URL", "").strip()) and not _LOCAL_DESKTOP_MODE
 
 if _USE_POSTGRES:
     import psycopg
