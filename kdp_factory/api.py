@@ -342,7 +342,18 @@ def create_manuscript(project_id:str,payload:dict):
 def run_editorial_stage(project_id:str,stage:str,payload:dict|None=None):
  try:
   payload=payload or {}
-  return run_stage(project_id,stage,payload.get("model"),payload.get("author",""))
+  project=get_project(project_id)
+  if not project: raise HTTPException(404,"Projeto não encontrado")
+  current=int(project.get("progress",0) or 0)
+  required={"brief":0,"outline":10,"manuscript":20,"revision":35,"assets":45,"layout":55,"cover":65,"validation":80,"export":90}
+  key=str(stage).strip().lower()
+  if key not in required: raise HTTPException(400,"Etapa inválida.")
+  if current < required[key]:
+   raise HTTPException(409,f"Conclua a etapa anterior antes de executar '{key}'.")
+  result=run_stage(project_id,key,payload.get("model"),payload.get("author",""))
+  persist_project(project_id)
+  return result
+ except HTTPException: raise
  except Exception as e:
   raise HTTPException(400,str(e))
 
