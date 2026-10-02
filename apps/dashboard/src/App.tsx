@@ -34,7 +34,7 @@ export default function App(){
   <button className={view==="home"?"active":""} onClick={()=>setView("home")}><Sparkles/>Início</button>
   <button className={view==="projects"?"active":""} onClick={()=>setView("projects")}><Library/>Meus projetos</button>
   <button className={view==="new"?"active":""} onClick={()=>setView("new")}><Plus/>Novo livro</button>
-  <button className={view==="workspace"?"active":""} onClick={()=>selected&&setView("workspace")}><BookOpen/>Produção</button>
+  <button className={view==="workspace"?"active":""} onClick={()=>setView(selected?"workspace":"projects")}><BookOpen/>Produção</button>
   <button className={view==="video"?"active":""} onClick={()=>setView("video")}><Video/>Vídeos sociais</button>
   <button className={view==="affiliate"?"active":""} onClick={()=>setView("affiliate")}><Users/>Afiliados</button>
   <button className={view==="system"?"active":""} onClick={()=>setView("system")}><Activity/>Sistema / IA</button>
