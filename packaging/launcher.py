@@ -2,6 +2,11 @@ from __future__ import annotations
 
 import logging
 import os
+
+# The packaged desktop application is always local-first. Set this before
+# importing the application modules so the database layer cannot select Neon
+# even if a DATABASE_URL happens to exist in the machine environment.
+os.environ["KDP_FACTORY_LOCAL_MODE"] = "1"
 import sys
 import threading
 import time
