@@ -1,11 +1,13 @@
 from __future__ import annotations
 from pathlib import Path
 import json
+import re
 from .projects import get_project, project_dir, checkpoint, update_project
 from .editorial.engine import EditorialEngine
 from .export.engine import ExportEngine
 from .metadata.engine import MetadataEngine
 from .cover import create_cover
+from .kdp.validator import KDPValidator
 
 def _chapters(project_id):
     p=project_dir(project_id)/"manuscript.json"
@@ -48,3 +50,49 @@ def generate_cover(project_id,author="",description="",pages=None,front_image=No
     pages=int(p["spec"].get("target_pages") or pages or 100)
     result=create_cover(project_dir(project_id),p["name"],author,description,p["spec"]["trim_size"],pages,back_image,front_image)
     update_project(project_id,status="cover",progress=max(80,int(p.get("progress",0)))); checkpoint(project_id,"cover",result); return result
+
+def run_stage(project_id, stage, model=None, author=""):
+    """Run one of the nine editorial stages and persist its checkpoint."""
+    p = get_project(project_id)
+    if not p: raise ValueError("Projeto não encontrado.")
+    stage = str(stage).strip().lower()
+    brief = str(p.get("spec", {}).get("subject") or p.get("name") or "").strip()
+    if stage == "brief":
+        state = {"project_id": project_id, "subject": brief, "book_type": p.get("book_type"), "language": p.get("language"), "edition": p.get("edition")}
+        checkpoint(project_id, "brief", state); update_project(project_id, status="brief", progress=10); return {"stage": stage, "status": "brief", "progress": 10, "state": state}
+    if stage == "outline": return generate_outline(project_id, brief, 10, model)
+    if stage == "manuscript":
+        op = project_dir(project_id) / "outline.json"
+        outline = json.loads(op.read_text(encoding="utf-8")) if op.exists() else generate_outline(project_id, brief, 10, model)
+        return generate_manuscript(project_id, outline, model)
+    if stage == "revision":
+        mp = project_dir(project_id) / "manuscript.json"
+        if not mp.exists(): raise ValueError("Gere o manuscrito antes da revisão.")
+        data = json.loads(mp.read_text(encoding="utf-8"))
+        instructions = "Revise ortografia, gramática, clareza, coerência, transições e repetição. Preserve fatos, intenção e estrutura do capítulo. Não invente fontes."
+        engine = EditorialEngine(); revised = []
+        for ch in data.get("chapters", []):
+            revised.append({**ch, "content": engine.revise(str(ch.get("content", "")), instructions, model)})
+        data["chapters"] = revised; mp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        checkpoint(project_id, "revision", {"file": str(mp), "chapters": len(revised)}); update_project(project_id, status="revision", progress=45)
+        return {"stage": stage, "status": "revision", "progress": 45, "chapters": len(revised)}
+    if stage == "assets":
+        mp = project_dir(project_id) / "manuscript.json"
+        if not mp.exists(): raise ValueError("Gere o manuscrito antes dos assets.")
+        data = json.loads(mp.read_text(encoding="utf-8")); assets_dir = project_dir(project_id) / "assets"; assets_dir.mkdir(parents=True, exist_ok=True); assets = []
+        for i, ch in enumerate(data.get("chapters", []), 1):
+            title = str(ch.get("title") or f"Capítulo {i}"); safe = re.sub(r"[^a-zA-Z0-9_-]+", "_", title).strip("_")[:60] or f"chapter_{i}"; svg = assets_dir / f"{i:03d}_{safe}.svg"
+            label = title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")[:70]
+            svg_text = '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900"><rect width="1600" height="900" fill="#203a5f"/><circle cx="1280" cy="180" r="120" fill="#fff" opacity=".35"/><text x="800" y="430" text-anchor="middle" fill="#fff" font-family="Arial" font-size="54" font-weight="700">' + label + '</text><text x="800" y="500" text-anchor="middle" fill="#d9e6f5" font-family="Arial" font-size="28">KDP AI Factory • asset editorial</text></svg>'
+            svg.write_text(svg_text, encoding="utf-8"); assets.append({"chapter": i, "title": title, "file": str(svg.relative_to(project_dir(project_id)))})
+        out = project_dir(project_id) / "assets.json"; out.write_text(json.dumps({"assets": assets}, ensure_ascii=False, indent=2), encoding="utf-8")
+        checkpoint(project_id, "assets", {"file": str(out), "count": len(assets)}); update_project(project_id, status="assets", progress=55); return {"stage": stage, "status": "assets", "progress": 55, "count": len(assets)}
+    if stage == "layout":
+        spec = dict(p.get("spec") or {}); layout = {"trim_size": spec.get("trim_size"), "bleed": bool(spec.get("bleed")), "bleed_inches": spec.get("bleed_inches", 0.125), "margins": spec.get("margins", 0.5), "target_pages": spec.get("target_pages"), "language": p.get("language"), "book_type": p.get("book_type")}
+        out = project_dir(project_id) / "layout.json"; out.write_text(json.dumps(layout, ensure_ascii=False, indent=2), encoding="utf-8"); checkpoint(project_id, "layout", layout); update_project(project_id, status="layout", progress=65); return {"stage": stage, "status": "layout", "progress": 65, "layout": layout}
+    if stage == "cover": return generate_cover(project_id, author=author)
+    if stage == "validation":
+        issues = KDPValidator().validate_spec(dict(p.get("spec") or {})); result = {"ok": not any(x.level == "error" for x in issues), "issues": [x.__dict__ for x in issues]}
+        out = project_dir(project_id) / "validation.json"; out.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"); checkpoint(project_id, "validation", result); update_project(project_id, status="validated" if result["ok"] else "validation_error", progress=90 if result["ok"] else 85); return {"stage": stage, **result, "progress": 90 if result["ok"] else 85}
+    if stage == "export": return {"stage": stage, "file": str(export_project(project_id, "pdf", author)), "status": "exported", "progress": 100}
+    raise ValueError("Etapa inválida.")
