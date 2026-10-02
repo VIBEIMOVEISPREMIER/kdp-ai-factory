@@ -1,5 +1,5 @@
 from __future__ import annotations
-import base64, hashlib, json
+import base64, hashlib, json, os
 from pathlib import Path
 from typing import Any
 import httpx
@@ -7,26 +7,42 @@ from cryptography.fernet import Fernet
 from .base import TextProvider, ImageProvider, AIResponse
 from ..config import DATA_DIR
 from ..licensing.machine import machine_id
+from ..db import connect, execute
 
 PATH = DATA_DIR / "ai_providers.enc"
 
 def _fernet() -> Fernet:
-    raw = hashlib.sha256(("kdp-ai-factory-ai-keys-v1|" + machine_id()).encode()).digest()
+    seed = os.getenv("KDP_FACTORY_SECRET") or os.getenv("DATABASE_URL") or machine_id()
+    raw = hashlib.sha256(("kdp-ai-factory-ai-keys-v2|" + seed).encode()).digest()
     return Fernet(base64.urlsafe_b64encode(raw))
 
 def _load() -> list[dict[str, Any]]:
-    if not PATH.exists():
-        return []
     try:
-        data = _fernet().decrypt(PATH.read_bytes())
-        return json.loads(data.decode("utf-8"))
+        with connect() as db:
+            execute(db, "CREATE TABLE IF NOT EXISTS ai_providers (id TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+            rows = execute(db, "SELECT data FROM ai_providers ORDER BY updated_at ASC").fetchall()
+        if rows:
+            return [json.loads(_fernet().decrypt(str(x["data"]).encode()).decode("utf-8")) for x in rows]
     except Exception:
-        return []
+        pass
+    if not PATH.exists(): return []
+    try:
+        return json.loads(_fernet().decrypt(PATH.read_bytes()).decode("utf-8"))
+    except Exception: return []
 
 def _save(items: list[dict[str, Any]]) -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        with connect() as db:
+            execute(db, "CREATE TABLE IF NOT EXISTS ai_providers (id TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+            execute(db, "DELETE FROM ai_providers")
+            for item in items:
+                blob = _fernet().encrypt(json.dumps(item, ensure_ascii=False).encode()).decode()
+                execute(db, "INSERT INTO ai_providers(id,data) VALUES(?,?)", (item["id"], blob))
+        return
+    except Exception:
+        pass
     PATH.write_bytes(_fernet().encrypt(json.dumps(items, ensure_ascii=False).encode("utf-8")))
-
 def list_providers() -> list[dict[str, Any]]:
     result=[]
     for p in _load():
