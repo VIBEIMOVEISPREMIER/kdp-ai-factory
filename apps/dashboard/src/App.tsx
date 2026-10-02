@@ -53,8 +53,33 @@ export default function App(){
  </main></div>
 }
 
-function Workspace({project,onBack,aiPrompt,setAiPrompt,aiResult,generate,goVideo}:{project:Project|null;onBack:()=>void;aiPrompt:string;setAiPrompt:(v:string)=>void;aiResult:string;generate:()=>void;goVideo:()=>void}){return <section className="page"><div className="sectionTitle"><div><h3>{project?.name||"Projeto"}</h3><small>{project?.book_type} • {project?.language}</small></div><div className="actions"><button className="outline small" onClick={goVideo}><Video/> Criar vídeo</button><button className="outline small" onClick={onBack}>Voltar</button></div></div><div className="grid"><Feature icon={<FileText/>} title="Manuscrito" text="Estrutura, capítulos, revisão e tradução."/><Feature icon={<ImageIcon/>} title="Assets" text="Imagens e catálogo de recursos."/><Feature icon={<Video/>} title="Vídeo social" text="Roteiro e geração de vídeo para divulgação."/><Feature icon={<ShieldCheck/>} title="Validação" text="Relatório antes da exportação."/></div><div className="section"><h3>Saída KDP</h3><p>Gere o miolo e a capa em arquivos separados. A capa completa é um único arquivo: contracapa + lombada + capa.</p><div className="actions"><button className="outline" onClick={async()=>{const r=await fetch(API+"/api/projects/"+project?.id+"/export",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({format:"pdf"})});const d=await r.json();alert(d.file||d.detail||"Concluído")}}>Gerar PDF do miolo</button><button className="primary" onClick={async()=>{const r=await fetch(API+"/api/projects/"+project?.id+"/cover",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})});const d=await r.json();alert(d.pdf||d.detail||"Capa concluída")}}>Gerar capa PDF + PNG + JPG</button></div></div><div className="section"><h3>Pipeline editorial</h3><div className="projects">{stages.map((s,i)=><div className="project" key={s}><div className="projectIcon">{i+1}</div><div className="projectInfo"><b>{s}</b><span>{["Briefing","Estrutura","Manuscrito","Revisão","Imagens","Layout","Capa","Validação","Exportação"][i]}</span><div className="bar"><i style={{width:(i===0?100:0)+"%"}}/></div></div></div>)}</div></div><div className="section"><h3>Assistente de texto</h3><p>Use suas APIs configuradas. O roteador prioriza nuvem/API e deixa a IA local como fallback.</p><div className="formCard"><div><label>Prompt</label><input value={aiPrompt} onChange={e=>setAiPrompt(e.target.value)} placeholder="Ex.: crie o briefing deste livro..."/></div><div><button className="primary" onClick={generate}><Sparkles/> Gerar</button></div></div>{aiResult&&<div className="resultBox">{aiResult}</div>}</div></section>}
-
+function Workspace({project,onBack,aiPrompt,setAiPrompt,aiResult,generate,goVideo}:{project:Project|null;onBack:()=>void;aiPrompt:string;setAiPrompt:(v:string)=>void;aiResult:string;generate:()=>void;goVideo:()=>void}){
+ const stageNames=["Briefing","Estrutura","Manuscrito","Revisão","Imagens","Layout","Capa","Validação","Exportação"];
+ const stageKeys=["brief","outline","manuscript","revision","assets","layout","cover","validation","export"];
+ const [done,setDone]=useState<boolean[]>(()=>stageNames.map((_,i)=>(project?.progress||0)>=[10,20,35,45,55,65,80,90,100][i]));
+ const [busy,setBusy]=useState<number|null>(null),[stageMsg,setStageMsg]=useState("");
+ useEffect(()=>setDone(stageNames.map((_,i)=>(project?.progress||0)>=[10,20,35,45,55,65,80,90,100][i])),[project?.id,project?.progress]);
+ async function runStage(i:number){
+  if(!project)return;
+  setBusy(i);setStageMsg("Executando "+stageNames[i]+"...");
+  try{
+   const r=await fetch(API+"/api/projects/"+project.id+"/stage/"+stageKeys[i],{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
+   const d=await r.json();if(!r.ok)throw new Error(d.detail||"Falha na etapa.");
+   setDone(x=>x.map((v,j)=>j<=i?true:v));setStageMsg(stageNames[i]+" concluída.");
+  }catch(e){setStageMsg(e instanceof Error?e.message:"Falha na etapa.");}
+  finally{setBusy(null)}
+ }
+ return <section className="page">
+  <div className="sectionTitle"><div><h3>{project?.name||"Projeto"}</h3><small>{project?.book_type} • {project?.language}</small></div><div className="actions"><button className="outline small" onClick={goVideo}><Video/> Criar vídeo</button><button className="outline small" onClick={onBack}>Voltar</button></div></div>
+  <div className="grid"><Feature icon={<FileText/>} title="Manuscrito" text="Estrutura, capítulos, revisão e tradução."/><Feature icon={<ImageIcon/>} title="Assets" text="Imagens e catálogo de recursos."/><Feature icon={<Video/>} title="Vídeo social" text="Roteiro e geração de vídeo para divulgação."/><Feature icon={<ShieldCheck/>} title="Validação" text="Relatório antes da exportação."/></div>
+  <div className="section"><div className="sectionTitle"><div><h3>Produção em 9 etapas</h3><p>Execute cada etapa na ordem. O projeto salva checkpoint após cada conclusão.</p></div><span>{done.filter(Boolean).length}/9 concluídas</span></div>
+   <div className="projects">{stageNames.map((name,i)=><div className="project" key={stageKeys[i]}><div className="projectIcon">{done[i]?<CheckCircle2/>:i+1}</div><div className="projectInfo"><b>{name}</b><span>{done[i]?"Concluída":"Aguardando execução"}</span><div className="bar"><i style={{width:(done[i]?100:0)+"%"}}/></div></div><button className={done[i]?"outline small":"primary small"} disabled={busy!==null} onClick={()=>runStage(i)}>{busy===i?<RefreshCw/>:done[i]?"Executar novamente":"Executar"}</button></div>)}</div>
+   {stageMsg&&<div className="resultBox">{stageMsg}</div>}
+  </div>
+  <div className="section"><h3>Saída KDP</h3><p>Depois da validação, a exportação gera o miolo no formato selecionado. A capa completa permanece separada: contracapa + lombada + frente.</p><div className="actions"><button className="outline" onClick={()=>runStage(8)} disabled={busy!==null}><FileText/> Exportar PDF</button><button className="primary" onClick={()=>runStage(6)} disabled={busy!==null}><ImageIcon/> Gerar capa</button></div></div>
+  <div className="section"><h3>Assistente de texto</h3><p>Use suas APIs configuradas. O roteador prioriza nuvem/API e deixa a IA local como fallback.</p><div className="formCard"><div><label>Prompt</label><input value={aiPrompt} onChange={e=>setAiPrompt(e.target.value)} placeholder="Ex.: crie o briefing deste livro..."/></div><div><button className="primary" onClick={generate}><Sparkles/> Gerar</button></div></div>{aiResult&&<div className="resultBox">{aiResult}</div>}</div>
+ </section>
+}
 
 function AffiliatePanel(){
  const [base,setBase]=useState(""),[token,setToken]=useState(localStorage.getItem("kdp:affiliateToken")||""),[dash,setDash]=useState<any>(null),[mode,setMode]=useState<"login"|"register">("login"),[form,setForm]=useState({name:"",email:"",wallet:"",pin:""}),[msg,setMsg]=useState("");
