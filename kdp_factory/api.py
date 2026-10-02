@@ -211,8 +211,13 @@ def delete_project_endpoint(project_id:str):
         if root.exists():
             shutil.rmtree(root)
         with connect() as db:
+            # Remove task records first so failed/abandoned projects do not leave
+            # orphaned production jobs behind.
+            execute(db,"DELETE FROM tasks WHERE project_id=?",(project_id,))
             execute(db,"DELETE FROM projects WHERE id=?",(project_id,))
-            if _USE_POSTGRES:\n                execute(db,"DELETE FROM kdp_factory_projects WHERE project_id=?",(project_id,))
+            if _USE_POSTGRES:
+                # Neon stores a complete project archive; remove it too.
+                execute(db,"DELETE FROM kdp_factory_projects WHERE project_id=?",(project_id,))
         return {"ok":True,"project_id":project_id}
     except Exception as e:
         raise HTTPException(500,f"Não foi possível excluir o projeto: {e}")
