@@ -37,15 +37,17 @@ export default function App(){
   try{
    const r=await fetch(API+"/api/projects/"+p.id,{method:"DELETE"}); const d=await r.json();
    if(!r.ok)throw new Error(d.detail||"Não foi possível excluir o projeto.");
-   setProjects(xs=>xs.filter(x=>x.id!==p.id)); if(selected?.id===p.id)setSelected(null);
+   setProjects(xs=>xs.filter(x=>x.id!==p.id)); if(selected?.id===p.id){setSelected(null);localStorage.removeItem("kdp:lastProject");setSessionRecovered(false);}
   }catch(e){alert(e instanceof Error?e.message:"Não foi possível excluir o projeto.");}
  }
  async function create(){
   if(!name.trim())return;setLoading(true);
+  let createdProjectId:string|null=null;
   try{
    const r=await fetch(API+"/api/projects",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,book_type:type,language,subject,edition:publicationFormat,author,content_mode:contentMode,resolution,publication_format:publicationFormat,print_mode:printMode,print_settings:{paper_size:printPaper,orientation:printOrientation,fit:printFit,margin_mm:Number(printMargin)||0,grayscale:printGray,output_format:printOutputFormat,custom_width_mm:Number(printCustomWidth)||210,custom_height_mm:Number(printCustomHeight)||297},ai_brief:aiBrief,ai_script:aiScript,trim_size:trimSize})});
    const p=await r.json();
    if(!r.ok){alert(p.detail||"Ative a licença para continuar.");setView("system");return}
+   createdProjectId=p.id;
    if(printDraft.length){
     const fd=new FormData();printDraft.forEach(f=>fd.append("files",f));
     const ir=await fetch(API+"/api/projects/"+p.id+"/print-files",{method:"POST",body:fd});
@@ -75,7 +77,14 @@ export default function App(){
     if(!rr.ok){const rd=await rr.json().catch(()=>({}));throw new Error(rd.detail||"As fotos foram importadas, mas não foi possível salvar suas funções.")}
    }
    setProjects(x=>[p,...x]);setName("");setPhotoDraft([]);setPhotoCover(null);setPhotoBack(null);setPhotoInterior([]);setPhotoReference([]);setPrintDraft([]);setPrintCover(null);setPrintBack(null);setPrintInterior([]);setSelected(p);setView("workspace");
-  }catch(e){alert(e instanceof Error?e.message:"Não foi possível criar o projeto.");}
+  }catch(e){
+   if(createdProjectId){
+    await fetch(API+"/api/projects/"+createdProjectId,{method:"DELETE"}).catch(()=>{});
+    setProjects(xs=>xs.filter(x=>x.id!==createdProjectId));
+    localStorage.removeItem("kdp:lastProject");setSessionRecovered(false);
+   }
+   alert(e instanceof Error?e.message:"Não foi possível criar o projeto.");
+  }
   finally{setLoading(false)}
  }
  async function generate(){if(!aiPrompt||!selected)return;setAiResult("Gerando...");try{const r=await fetch(API+"/api/ai/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:aiPrompt})});const d=await r.json();setAiResult(d.text||d.detail||"Sem resposta")}catch{setAiResult("Não foi possível conectar aos provedores configurados.")}}
@@ -209,7 +218,7 @@ function Workspace({project,onBack,onProjectUpdate,aiPrompt,setAiPrompt,aiResult
   finally{setBusy(null)}
  }
  return <section className="page">
-  <div className="sectionTitle"><div><h3>{project?.name||"Projeto"}</h3><small>{project?.book_type} • {project?.language}</small></div><div className="actions"><button className="outline small" onClick={goPrint}><Printer/> Preparar impressão</button><button className="outline small" onClick={goVideo}><Video/> Criar vídeo</button><button className="outline small" onClick={onBack}>Voltar</button></div></div>
+  <div className="sectionTitle"><div><h3>{project?.name||"Projeto"}</h3><small>{project?.book_type} • {project?.language}</small></div><div className="actions"><button className="outline small" onClick={goPrint}><Printer/> Preparar impressão</button><button className="outline small" onClick={goVideo}><Video/> Criar vídeo</button><button className="outline small danger" onClick={async()=>{if(!project||!confirm("Excluir este projeto e todos os arquivos dele?"))return;try{const r=await fetch(API+"/api/projects/"+project.id,{method:"DELETE"});const d=await r.json();if(!r.ok)throw new Error(d.detail||"Não foi possível excluir o projeto.");localStorage.removeItem("kdp:lastProject");setSessionRecovered(false);onBack();}catch(e){alert(e instanceof Error?e.message:"Não foi possível excluir o projeto.")}}}><Trash2/> Excluir projeto</button><button className="outline small" onClick={onBack}>Voltar</button></div></div>
   <div className="grid"><Feature icon={<FileText/>} title="Manuscrito" text="Estrutura, capítulos, revisão e tradução."/><Feature icon={<ImageIcon/>} title="Fotos pessoais" text="Até 100 fotos da galeria do PC ou celular, com capa, contracapa e interior."/><Feature icon={<Video/>} title="Vídeo social" text="Roteiro e geração de vídeo para divulgação."/><Feature icon={<ShieldCheck/>} title="Validação" text="Relatório antes da exportação."/></div>\n  <PhotoLibrary project={project}/>
   <div className="section"><div className="sectionTitle"><div><h3>Produção completa</h3><p>Execute o livro inteiro de uma vez. O Factory salva checkpoint em cada etapa e continua do ponto em que parou.</p></div><div className="actions"><span>{done.filter(Boolean).length}/9 concluídas</span><button className="primary" disabled={busy!==null||done.every(Boolean)} onClick={runAll}>{busy===99?<><RefreshCw/> Produzindo...</>:<><WandSparkles/> Produzir livro completo</>}</button></div></div>
    <div className="projects">{stageNames.map((name,i)=>{const locked=i>0&&!done[i-1];return <div className="project" key={stageKeys[i]}><div className="projectIcon">{done[i]?<CheckCircle2/>:i+1}</div><div className="projectInfo"><b>{name}</b><span>{done[i]?"Concluída":locked?"Bloqueada até concluir a etapa anterior":"Pronta para execução"}</span><div className="bar"><i style={{width:(done[i]?100:0)+"%"}}/></div></div><button className={done[i]?"outline small":"primary small"} disabled={busy!==null||locked} onClick={()=>runStage(i)}>{busy===i?<RefreshCw/>:done[i]?"Executar novamente":locked?"Bloqueada":"Executar"}</button></div>})}</div>
