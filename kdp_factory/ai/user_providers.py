@@ -43,6 +43,7 @@ def _save(items: list[dict[str, Any]]) -> None:
     except Exception:
         pass
     PATH.write_bytes(_fernet().encrypt(json.dumps(items, ensure_ascii=False).encode("utf-8")))
+
 def list_providers() -> list[dict[str, Any]]:
     result=[]
     for p in _load():
@@ -56,8 +57,9 @@ def get_provider(provider_id: str) -> dict[str, Any] | None:
 def upsert_provider(data: dict[str, Any]) -> dict[str, Any]:
     p=dict(data)
     p["id"]=str(p.get("id") or p.get("name") or "custom").strip().lower().replace(" ","-")
-    items=[x for x in _load() if x.get("id") != p["id"]]
-    old=next((x for x in items if x.get("id")==p["id"]), None)
+    all_items=_load()
+    old=next((x for x in all_items if x.get("id")==p["id"]), None)
+    items=[x for x in all_items if x.get("id") != p["id"]]
     if old and not p.get("api_key"):
         p["api_key"]=old.get("api_key","")
     p.setdefault("kind","text")
@@ -103,7 +105,7 @@ class OpenAICompatibleTextProvider(TextProvider):
             if self._is_gemini():
                 h["x-goog-api-key"]=self.config["api_key"]
             else:
-                h["Authorization"]=f"Bearer {self.config['api_key']}"
+                h["Authorization"]=f"Bearer {self.config["api_key"]}"
         h.update(self.config.get("headers") or {})
         return h
 
@@ -120,7 +122,13 @@ class OpenAICompatibleTextProvider(TextProvider):
 
         selected_model=model or self.config.get("model")
         if self._is_gemini():
-            selected_model=selected_model or "gemini-2.5-flash"
+            fallback_order=["gemini-3.8-flash","gemini-3.5-flash-lite","gemini-3.1-flash-lite","gemini-2.5-flash-lite"]
+            models_to_try=[]
+            for candidate in fallback_order:
+                if candidate not in models_to_try: models_to_try.append(candidate)
+            if selected_model and selected_model not in models_to_try:
+                models_to_try.append(selected_model)
+            selected_model=models_to_try[0]
             payload={"contents":[{"role":"user","parts":[{"text":prompt}]}]}
             generation_config={}
             for source,target in (("temperature","temperature"),("top_p","topP"),("max_tokens","maxOutputTokens")):
@@ -129,22 +137,17 @@ class OpenAICompatibleTextProvider(TextProvider):
             if generation_config:
                 payload["generationConfig"]=generation_config
         else:
+            selected_model=selected_model or "default"
+            models_to_try=[selected_model]
             payload={"model":selected_model,"messages":[{"role":"user","content":prompt}]}
             for k in ("temperature","top_p","max_tokens"):
                 if k in kwargs: payload[k]=kwargs[k]
 
-        # Gemini can return transient 429/500/502/503/504 errors.
-        # Retry briefly, then automatically try current fallback models.
-        models_to_try=[selected_model]
-        if self._is_gemini():
-            for fallback in ("gemini-3.8-flash","gemini-3.5-flash-lite","gemini-3.1-flash-lite","gemini-2.5-flash-lite"):
-                if fallback not in models_to_try:
-                    models_to_try.append(fallback)
         last_error=None
         d=None
         for attempt_model in models_to_try:
             attempt_payload=payload
-            if self._is_gemini() and attempt_model != selected_model:
+            if self._is_gemini():
                 attempt_payload={"contents":[{"role":"user","parts":[{"text":prompt}]}]}
                 if generation_config:
                     attempt_payload["generationConfig"]=generation_config
@@ -202,14 +205,12 @@ class UserImageAPIProvider(ImageProvider):
         r=httpx.post(url,json=payload,headers=headers,timeout=kwargs.get("timeout",900))
         r.raise_for_status(); return r.json()
 
-
 class UserVideoAPIProvider:
     """Generic remote video provider. The API may return a URL or provider-specific JSON."""
     def __init__(self, config):
         self.config=config
         self.name=config.get("name") or config.get("id") or "custom-video"
-    def available(self):
-        return bool(self.config.get("api_key") and self.config.get("base_url"))
+    def available(self): return bool(self.config.get("api_key") and self.config.get("base_url"))
     def generate(self, prompt, **kwargs):
         if not self.available():
             raise RuntimeError(f"API de vídeo {self.name} não está configurada.")
