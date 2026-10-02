@@ -10,7 +10,7 @@ const stages=["brief","outline","manuscript","revision","assets","layout","cover
 
 export default function App(){
  const [projects,setProjects]=useState<Project[]>([]),[name,setName]=useState(""),[type,setType]=useState("childrens"),[language,setLanguage]=useState("pt-BR"),[subject,setSubject]=useState(""),[edition,setEdition]=useState("print"),[loading,setLoading]=useState(false),[view,setView]=useState("home"),[system,setSystem]=useState<any>(null),[license,setLicense]=useState<any>(null),[selected,setSelected]=useState<Project|null>(null),[aiPrompt,setAiPrompt]=useState(""),[aiResult,setAiResult]=useState("");
- const [sessionRecovered,setSessionRecovered]=useState(false);
+ const [sessionRecovered,setSessionRecovered]=useState(false);\n const [photoDraft,setPhotoDraft]=useState<File[]>([]),[photoCover,setPhotoCover]=useState<string|null>(null),[photoBack,setPhotoBack]=useState<string|null>(null),[photoInterior,setPhotoInterior]=useState<string[]>([]);
 
  async function load(){
   try{
@@ -25,7 +25,25 @@ export default function App(){
  useEffect(()=>{if(!selected?.id)return;const t=setTimeout(()=>{fetch(API+"/api/projects/"+selected.id+"/checkpoint",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({stage:"workspace_autosave",state:{aiPrompt,view:"workspace"}})}).catch(()=>{})},1000);return()=>clearTimeout(t)},[aiPrompt,selected?.id]);
  async function create(){
   if(!name.trim())return;setLoading(true);
-  try{const r=await fetch(API+"/api/projects",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,book_type:type,language,subject,edition})});const p=await r.json();if(!r.ok){alert(p.detail||"Ative a licença para continuar.");setView("system");return}setProjects(x=>[p,...x]);setName("");setSelected(p);setView("workspace")}
+  try{
+   const r=await fetch(API+"/api/projects",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,book_type:type,language,subject,edition})});
+   const p=await r.json();
+   if(!r.ok){alert(p.detail||"Ative a licença para continuar.");setView("system");return}
+   if(photoDraft.length){
+    const fd=new FormData();photoDraft.forEach(f=>fd.append("files",f));
+    const pr=await fetch(API+"/api/projects/"+p.id+"/photos",{method:"POST",body:fd});
+    const pd=await pr.json();
+    if(!pr.ok)throw new Error(pd.detail||"O projeto foi criado, mas não foi possível importar as fotos.");
+    const ids=(pd.added||[]).map((x:any)=>x.id);
+    const byName=(file:File,i:number)=>ids[i]||null;
+    const coverId=photoCover!==null?byName(photoDraft[Number(photoCover)],Number(photoCover)):null;
+    const backId=photoBack!==null?byName(photoDraft[Number(photoBack)],Number(photoBack)):null;
+    const interiorIds=photoInterior.map(k=>byName(photoDraft[Number(k)],Number(k))).filter(Boolean);
+    const rr=await fetch(API+"/api/projects/"+p.id+"/photos",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({cover:coverId,back_cover:backId,interior:interiorIds})});
+    if(!rr.ok){const rd=await rr.json().catch(()=>({}));throw new Error(rd.detail||"As fotos foram importadas, mas não foi possível salvar suas funções.")}
+   }
+   setProjects(x=>[p,...x]);setName("");setPhotoDraft([]);setPhotoCover(null);setPhotoBack(null);setPhotoInterior([]);setSelected(p);setView("workspace");
+  }catch(e){alert(e instanceof Error?e.message:"Não foi possível criar o projeto.");}
   finally{setLoading(false)}
  }
  async function generate(){if(!aiPrompt||!selected)return;setAiResult("Gerando...");try{const r=await fetch(API+"/api/ai/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:aiPrompt})});const d=await r.json();setAiResult(d.text||d.detail||"Sem resposta")}catch{setAiResult("Não foi possível conectar aos provedores configurados.")}}
@@ -45,12 +63,35 @@ export default function App(){
  <section className="grid"><Feature icon={<Brain/>} title="Várias IAs" text="Cadastre quantos provedores quiser, inclusive APIs que fazem texto + imagem."/><Feature icon={<ImageIcon/>} title="Imagens" text="APIs externas, engine remoto ou geração local como fallback."/><Feature icon={<Video/>} title="Vídeo social" text="Gere vídeos promocionais a partir do livro criado."/><Feature icon={<ShieldCheck/>} title="Persistência" text="Projetos, APIs e checkpoints ficam salvos no computador."/></section>
  <section className="section"><div className="sectionTitle"><h3>Projetos recentes</h3><button onClick={()=>setView("projects")}>Ver todos</button></div><Projects items={projects.slice(0,4)} onOpen={openProject}/></section></>}
  {view==="projects"&&<section className="section page"><div className="sectionTitle"><h3>{projects.length?projects.length+" projeto(s)":"Nenhum projeto ainda"}</h3><button className="primary small" onClick={()=>setView("new")}><Plus/> Criar livro</button></div><Projects items={projects} onOpen={openProject}/></section>}
- {view==="new"&&<section className="creator">{license?.licensed||license?.free_books_remaining>0?null:<div className="formCard"><div><b>Teste gratuito encerrado</b><p>Ative a licença vitalícia para criar novos livros.</p></div><button className="primary" onClick={()=>setView("system")}>Ativar licença</button></div>}<div className="step"><span>01</span><div><b>Escolha o tipo de livro</b><small>O tipo orienta o fluxo editorial e a geração de conteúdo.</small></div></div><div className="typeGrid">{types.map(t=><button className={type===t[0]?"type selected":"type"} onClick={()=>setType(t[0])} key={t[0]}><span className="typeIcon">{t[1]}</span><strong>{t[2]}</strong><small>{t[3]}</small></button>)}</div><div className="formCard"><div><label>Assunto / tema do livro</label><input value={subject} onChange={e=>setSubject(e.target.value)} placeholder="Ex.: dinossauros, receitas, romance policial"/><small>O assunto será usado no conteúdo, metadados e roteiro de divulgação.</small><label>Nome do projeto</label><input value={name} onChange={e=>setName(e.target.value)} placeholder="Ex.: A Floresta Encantada"/></div><div><label>Formato de publicação</label><select value={edition} onChange={e=>setEdition(e.target.value)}><option value="print">Capa comum + eBook</option><option value="ebook">Somente eBook</option><option value="both">Impresso + eBook</option></select><label>Idioma do livro</label><select value={language} onChange={e=>setLanguage(e.target.value)}>{languages.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div></div><div className="actions"><button className="outline" onClick={()=>setView("home")}>Cancelar</button><button className="primary" disabled={!name.trim()||loading} onClick={create}>{loading?"Criando...":"Criar projeto"}<ChevronRight/></button></div></section>}
+ {view==="new"&&<section className="creator">{license?.licensed||license?.free_books_remaining>0?null:<div className="formCard"><div><b>Teste gratuito encerrado</b><p>Ative a licença vitalícia para criar novos livros.</p></div><button className="primary" onClick={()=>setView("system")}>Ativar licença</button></div>}<div className="step"><span>01</span><div><b>Escolha o tipo de livro</b><small>O tipo orienta o fluxo editorial e a geração de conteúdo.</small></div></div><div className="typeGrid">{types.map(t=><button className={type===t[0]?"type selected":"type"} onClick={()=>setType(t[0])} key={t[0]}><span className="typeIcon">{t[1]}</span><strong>{t[2]}</strong><small>{t[3]}</small></button>)}</div><div className="formCard"><div><label>Assunto / tema do livro</label><input value={subject} onChange={e=>setSubject(e.target.value)} placeholder="Ex.: dinossauros, receitas, romance policial"/><small>O assunto será usado no conteúdo, metadados e roteiro de divulgação.</small><label>Nome do projeto</label><input value={name} onChange={e=>setName(e.target.value)} placeholder="Ex.: A Floresta Encantada"/></div><div><label>Formato de publicação</label><select value={edition} onChange={e=>setEdition(e.target.value)}><option value="print">Capa comum + eBook</option><option value="ebook">Somente eBook</option><option value="both">Impresso + eBook</option></select><label>Idioma do livro</label><select value={language} onChange={e=>setLanguage(e.target.value)}>{languages.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div></div><PhotoDraft files={photoDraft} setFiles={setPhotoDraft} cover={photoCover} setCover={setPhotoCover} back={photoBack} setBack={setPhotoBack} interior={photoInterior} setInterior={setPhotoInterior}/><div className="actions"><button className="outline" onClick={()=>setView("home")}>Cancelar</button><button className="primary" disabled={!name.trim()||loading} onClick={create}>{loading?"Criando...":"Criar projeto"}<ChevronRight/></button></div></section>}
  {view==="workspace"&&<Workspace project={selected} onBack={()=>setView("projects")} aiPrompt={aiPrompt} setAiPrompt={setAiPrompt} aiResult={aiResult} generate={generate} goVideo={()=>setView("video")}/>}
  {view==="video"&&<VideoStudio projects={projects} project={selected} onSelect={p=>setSelected(p)} onBack={()=>setView(selected?"workspace":"projects")} onConfigure={()=>setView("system")}/>}
  {view==="affiliate"&&<AffiliatePanel/>}
  {view==="system"&&<System system={system} license={license} onActivated={load}/>}
  </main></div>
+}
+
+
+function PhotoDraft({files,setFiles,cover,setCover,back,setBack,interior,setInterior}:{files:File[];setFiles:(v:File[])=>void;cover:string|null;setCover:(v:string|null)=>void;back:string|null;setBack:(v:string|null)=>void;interior:string[];setInterior:(v:string[])=>void}){
+ const [urls,setUrls]=useState<string[]>([]);
+ useEffect(()=>{const next=files.map(f=>URL.createObjectURL(f));setUrls(next);return()=>next.forEach(URL.revokeObjectURL)},[files]);
+ function add(e:React.ChangeEvent<HTMLInputElement>){
+  const incoming=Array.from(e.target.files||[]);
+  const valid=incoming.filter(f=>["image/jpeg","image/png","image/webp"].includes(f.type));
+  if(files.length+valid.length>100){alert("O limite é de 100 fotos por projeto.");return}
+  if(valid.length<incoming.length)alert("Algumas imagens foram ignoradas. Use JPG, PNG ou WEBP.");
+  setFiles([...files,...valid]);e.target.value="";
+ }
+ function remove(i:number){
+  setFiles(files.filter((_,n)=>n!==i));
+  if(cover===String(i))setCover(null);else if(cover!==null&&Number(cover)>i)setCover(String(Number(cover)-1));
+  if(back===String(i))setBack(null);else if(back!==null&&Number(back)>i)setBack(String(Number(back)-1));
+  setInterior(interior.filter(x=>Number(x)!==i).map(x=>String(Number(x)>i?Number(x)-1:Number(x))));
+ }
+ function toggleInterior(i:number){const k=String(i);setInterior(interior.includes(k)?interior.filter(x=>x!==k):[...interior,k]);}
+ return <div className="section"><div className="sectionTitle"><div><h3>Fotos pessoais</h3><p>Adicione até 100 fotos da galeria do celular ou do PC. A capa, contracapa e fotos do interior são escolhidas separadamente.</p></div><label className="primary small" style={{cursor:"pointer"}}>Adicionar fotos<input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={add}/></label></div>
+ {files.length===0?<div className="resultBox">Opcional: você pode criar o livro sem fotos. Se adicionar fotos, elas serão preparadas automaticamente sem esticar ou deformar a imagem.</div>:<div className="photoGrid">{files.map((f,i)=><div className="photoCard" key={i}><img src={urls[i]} alt={f.name}/><b>{f.name}</b><div className="photoActions"><button className={cover===String(i)?"primary small":"outline small"} onClick={()=>setCover(cover===String(i)?null:String(i))}>Capa</button><button className={back===String(i)?"primary small":"outline small"} onClick={()=>setBack(back===String(i)?null:String(i))}>Contracapa</button><button className={interior.includes(String(i))?"primary small":"outline small"} onClick={()=>toggleInterior(i)}>Interior</button><button className="outline small danger" onClick={()=>remove(i)}>Excluir</button></div></div>)}</div>}
+ <small>{files.length}/100 fotos preparadas para o projeto • {cover!==null?"capa definida":"capa não definida"} • {back!==null?"contracapa definida":"contracapa não definida"} • {interior.length} no interior</small></div>
 }
 
 function Workspace({project,onBack,aiPrompt,setAiPrompt,aiResult,generate,goVideo}:{project:Project|null;onBack:()=>void;aiPrompt:string;setAiPrompt:(v:string)=>void;aiResult:string;generate:()=>void;goVideo:()=>void}){
