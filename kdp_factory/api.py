@@ -12,7 +12,7 @@ from .imports.engine import import_file,normalize_to_text
 from .kdp.validator import KDPValidator
 from .models.manager import ModelManager
 from .export.engine import ExportEngine
-from .bookflow import generate_outline,generate_manuscript,metadata,export_project,generate_cover
+from .bookflow import generate_outline,generate_manuscript,metadata,export_project,generate_cover,run_stage
 from .licensing.client import status as license_status,activate_with_license,create_payment_intent,verify_payment_and_issue_license
 from .licensing.models import LicenseActivationRequest
 from .hardware import as_dict as hardware_profile
@@ -239,6 +239,14 @@ def create_outline(project_id:str,req:OutlineRequest):
 def create_manuscript(project_id:str,payload:dict):
  try:return generate_manuscript(project_id,payload["outline"],payload.get("model"))
  except Exception as e:raise HTTPException(400,str(e))
+@app.post("/api/projects/{project_id}/stage/{stage}")
+def run_editorial_stage(project_id:str,stage:str,payload:dict|None=None):
+ try:
+  payload=payload or {}
+  return run_stage(project_id,stage,payload.get("model"),payload.get("author",""))
+ except Exception as e:
+  raise HTTPException(400,str(e))
+
 @app.post("/api/projects/{project_id}/metadata")
 def create_metadata(project_id:str,payload:dict):
  try:
