@@ -1,4 +1,5 @@
 from fastapi import FastAPI,HTTPException,UploadFile,File,Form
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel,Field
 from pathlib import Path
@@ -200,6 +201,15 @@ def patch_project(project_id:str,payload:dict):
 def project_photos(project_id:str):
     if not get_project(project_id): raise HTTPException(404,"Projeto não encontrado")
     return get_photo_manifest(project_id)
+
+@app.get("/api/projects/{project_id}/photos/{photo_id}")
+def project_photo_file(project_id:str,photo_id:str):
+    manifest=get_photo_manifest(project_id)
+    item=next((x for x in manifest.get("photos",[]) if x.get("id")==photo_id),None)
+    if not item: raise HTTPException(404,"Foto não encontrada")
+    path=project_dir(project_id)/item["prepared"]
+    if not path.exists(): raise HTTPException(404,"Arquivo da foto não encontrado")
+    return FileResponse(path,media_type="image/jpeg")
 
 @app.post("/api/projects/{project_id}/photos")
 async def upload_project_photos(project_id:str, files:list[UploadFile]=File(...)):
