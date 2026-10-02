@@ -8,6 +8,7 @@ from .export.engine import ExportEngine
 from .metadata.engine import MetadataEngine
 from .cover import create_cover
 from .kdp.validator import KDPValidator
+from .photo_manager import get_photo_manifest
 
 def _chapters(project_id):
     p=project_dir(project_id)/"manuscript.json"
@@ -33,8 +34,11 @@ def generate_manuscript(project_id,outline,model=None):
 def export_project(project_id,fmt="pdf",author=""):
     p=get_project(project_id); chapters=_chapters(project_id)
     if not p or not chapters: raise ValueError("Projeto sem manuscrito.")
+    photo_data=get_photo_manifest(project_id)
+    photo_map={x["id"]:x["prepared"] for x in photo_data.get("photos",[])}
+    interior_images=[str(project_dir(project_id)/photo_map[x]) for x in photo_data.get("interior",[]) if x in photo_map]
     out=project_dir(project_id)/"exports"/f"{p['name'].replace(' ','_')}.{fmt}"; e=ExportEngine()
-    if fmt=="pdf": e.pdf(chapters,out,p["name"],author,p["spec"]["trim_size"],p["spec"]["bleed"])
+    if fmt=="pdf": e.pdf(chapters,out,p["name"],author,p["spec"]["trim_size"],p["spec"]["bleed"],interior_images=interior_images)
     elif fmt=="docx": e.docx(chapters,out,p["name"],author)
     elif fmt=="epub": e.epub(chapters,out,p["name"],p["language"])
     else: raise ValueError("Formato inválido")
@@ -48,6 +52,10 @@ def generate_cover(project_id,author="",description="",pages=None,front_image=No
     p=get_project(project_id)
     if not p: raise ValueError("Projeto não encontrado")
     pages=int(p["spec"].get("target_pages") or pages or 100)
+    photo_data=get_photo_manifest(project_id)
+    photo_map={x["id"]:x["prepared"] for x in photo_data.get("photos",[])}
+    back_image=back_image or (str(project_dir(project_id)/photo_map[photo_data["back_cover"]]) if photo_data.get("back_cover") in photo_map else None)
+    front_image=front_image or (str(project_dir(project_id)/photo_map[photo_data["cover"]]) if photo_data.get("cover") in photo_map else None)
     result=create_cover(project_dir(project_id),p["name"],author,description,p["spec"]["trim_size"],pages,back_image,front_image)
     update_project(project_id,status="cover",progress=max(80,int(p.get("progress",0)))); checkpoint(project_id,"cover",result); return result
 
