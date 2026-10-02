@@ -176,10 +176,26 @@ function Workspace({project,onBack,onProjectUpdate,aiPrompt,setAiPrompt,aiResult
   }catch(e){setStageMsg(e instanceof Error?e.message:"Falha na etapa.");}
   finally{setBusy(null)}
  }
+ async function runAll(){
+  if(!project||busy!==null)return;
+  setBusy(99);setStageMsg("Iniciando produção completa...");
+  try{
+   for(let i=0;i<stageKeys.length;i++){
+    if(done[i])continue;
+    setStageMsg("Produção completa: "+stageNames[i]+"...");
+    const r=await fetch(API+"/api/projects/"+project.id+"/stage/"+stageKeys[i],{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
+    const d=await r.json();if(!r.ok)throw new Error(d.detail||("Falha em "+stageNames[i]+"."));
+    setDone(x=>x.map((v,j)=>j<=i?true:v));
+    await onProjectUpdate(project.id);
+   }
+   setStageMsg("Produção completa concluída. Livro pronto para baixar.");
+  }catch(e){setStageMsg(e instanceof Error?e.message:"Falha na produção completa.");}
+  finally{setBusy(null)}
+ }
  return <section className="page">
   <div className="sectionTitle"><div><h3>{project?.name||"Projeto"}</h3><small>{project?.book_type} • {project?.language}</small></div><div className="actions"><button className="outline small" onClick={goPrint}><Printer/> Preparar impressão</button><button className="outline small" onClick={goVideo}><Video/> Criar vídeo</button><button className="outline small" onClick={onBack}>Voltar</button></div></div>
   <div className="grid"><Feature icon={<FileText/>} title="Manuscrito" text="Estrutura, capítulos, revisão e tradução."/><Feature icon={<ImageIcon/>} title="Fotos pessoais" text="Até 100 fotos da galeria do PC ou celular, com capa, contracapa e interior."/><Feature icon={<Video/>} title="Vídeo social" text="Roteiro e geração de vídeo para divulgação."/><Feature icon={<ShieldCheck/>} title="Validação" text="Relatório antes da exportação."/></div>\n  <PhotoLibrary project={project}/>
-  <div className="section"><div className="sectionTitle"><div><h3>Produção em 9 etapas</h3><p>Execute cada etapa na ordem. O projeto salva checkpoint após cada conclusão.</p></div><span>{done.filter(Boolean).length}/9 concluídas</span></div>
+  <div className="section"><div className="sectionTitle"><div><h3>Produção completa</h3><p>Execute o livro inteiro de uma vez. O Factory salva checkpoint em cada etapa e continua do ponto em que parou.</p></div><div className="actions"><span>{done.filter(Boolean).length}/9 concluídas</span><button className="primary" disabled={busy!==null||done.every(Boolean)} onClick={runAll}>{busy===99?<><RefreshCw/> Produzindo...</>:<><WandSparkles/> Produzir livro completo</>}</button></div></div>
    <div className="projects">{stageNames.map((name,i)=>{const locked=i>0&&!done[i-1];return <div className="project" key={stageKeys[i]}><div className="projectIcon">{done[i]?<CheckCircle2/>:i+1}</div><div className="projectInfo"><b>{name}</b><span>{done[i]?"Concluída":locked?"Bloqueada até concluir a etapa anterior":"Pronta para execução"}</span><div className="bar"><i style={{width:(done[i]?100:0)+"%"}}/></div></div><button className={done[i]?"outline small":"primary small"} disabled={busy!==null||locked} onClick={()=>runStage(i)}>{busy===i?<RefreshCw/>:done[i]?"Executar novamente":locked?"Bloqueada":"Executar"}</button></div>})}</div>
    {stageMsg&&<div className="resultBox">{stageMsg}</div>}
   </div>
