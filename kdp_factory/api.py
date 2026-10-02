@@ -200,6 +200,50 @@ def patch_project(project_id:str,payload:dict):
  p=update_project(project_id,**payload)
  if not p:raise HTTPException(404,"Projeto não encontrado")
  return p
+@app.delete("/api/projects/{project_id}")
+def delete_project_endpoint(project_id:str):
+    p=get_project(project_id)
+    if not p:
+        raise HTTPException(404,"Projeto não encontrado")
+    try:
+        import shutil
+        root=project_dir(project_id)
+        if root.exists():
+            shutil.rmtree(root)
+        with connect() as db:
+            execute(db,"DELETE FROM projects WHERE id=?",(project_id,))
+            execute(db,"DELETE FROM kdp_factory_projects WHERE project_id=?",(project_id,))
+        return {"ok":True,"project_id":project_id}
+    except Exception as e:
+        raise HTTPException(500,f"Não foi possível excluir o projeto: {e}")
+
+@app.get("/api/projects/{project_id}/manuscript")
+def get_project_manuscript(project_id:str):
+    if not get_project(project_id): raise HTTPException(404,"Projeto não encontrado")
+    path=project_dir(project_id)/"manuscript.json"
+    if not path.exists(): raise HTTPException(404,"Manuscrito ainda não foi gerado.")
+    try:
+        return __import__("json").loads(path.read_text(encoding="utf-8"))
+    except Exception as e:
+        raise HTTPException(500,f"Não foi possível ler o manuscrito: {e}")
+
+@app.patch("/api/projects/{project_id}/manuscript")
+def update_project_manuscript(project_id:str,payload:dict):
+    if not get_project(project_id): raise HTTPException(404,"Projeto não encontrado")
+    chapters=payload.get("chapters")
+    if not isinstance(chapters,list):
+        raise HTTPException(400,"chapters deve ser uma lista.")
+    clean=[]
+    for i,ch in enumerate(chapters,1):
+        if not isinstance(ch,dict): raise HTTPException(400,f"Capítulo {i} inválido.")
+        clean.append({"title":str(ch.get("title") or f"Capítulo {i}"),"content":str(ch.get("content") or "")})
+    data={"title":str(payload.get("title") or get_project(project_id).get("name") or "Livro"),"language":str(payload.get("language") or get_project(project_id).get("language") or "pt-BR"),"chapters":clean}
+    path=project_dir(project_id)/"manuscript.json"
+    path.write_text(__import__("json").dumps(data,ensure_ascii=False,indent=2),encoding="utf-8")
+    checkpoint(project_id,"manual_edit",{"chapters":len(clean)})
+    persist_project(project_id)
+    return data
+
 @app.get("/api/projects/{project_id}/photos")
 def project_photos(project_id:str):
     if not get_project(project_id): raise HTTPException(404,"Projeto não encontrado")
