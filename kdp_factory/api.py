@@ -23,6 +23,7 @@ from .ai.user_providers import list_providers as list_ai_providers, upsert_provi
 from .web_persistence import restore_projects, persist_project, persistence_status
 from .config import LICENSE_SERVER_URL
 from .photo_manager import upload_photos, get_photo_manifest, update_photo_roles
+from .print_manager import add_files as add_print_files, manifest as print_manifest, reorder as reorder_print_files, build_print_pdf
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
 class ProjectCreate(BaseModel): name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR";subject:str="";edition:str="print"
 class TextRequest(BaseModel): prompt:str=Field(min_length=1);model:str|None=None
@@ -31,6 +32,7 @@ class ValidateRequest(BaseModel): spec:dict;pdf_path:str|None=None
 class CheckpointRequest(BaseModel): stage:str;state:dict={}
 class PaymentIntentRequest(BaseModel): asset:str=Field(pattern=r"^(USDT|BNB)$")
 class PaymentRequest(BaseModel): tx_id:str=Field(min_length=20,max_length=200);asset:str=Field(pattern=r"^(USDT|BNB)$");referral_code:str="";intent_id:str="";intent_secret:str=""
+class PrintBuildRequest(BaseModel): paper_size:str="A4";orientation:str="portrait";fit:str="contain";margin_mm:float=0;grayscale:bool=False;name:str="arquivo_para_impressao";custom_width_mm:float=210;custom_height_mm:float=297
 @app.on_event("startup")
 def startup():
     # Never block the HTTP server from binding its port because Neon is
@@ -229,6 +231,47 @@ def set_project_photo_roles(project_id:str,payload:dict):
         persist_project(project_id)
         return result
     except ValueError as e: raise HTTPException(400,str(e))
+
+@app.get("/api/projects/{project_id}/print-files")
+def project_print_files(project_id:str):
+    if not get_project(project_id): raise HTTPException(404,"Projeto não encontrado")
+    return print_manifest(project_id)
+
+@app.post("/api/projects/{project_id}/print-files")
+async def upload_print_files(project_id:str, files:list[UploadFile]=File(...)):
+    if not get_project(project_id): raise HTTPException(404,"Projeto não encontrado")
+    try:
+        result=add_print_files(project_id, files, [f.filename or "arquivo" for f in files])
+        persist_project(project_id)
+        return result
+    except ValueError as e: raise HTTPException(400,str(e))
+    except Exception as e: raise HTTPException(500,str(e))
+
+@app.patch("/api/projects/{project_id}/print-files/order")
+def reorder_project_print_files(project_id:str,payload:dict):
+    if not get_project(project_id): raise HTTPException(404,"Projeto não encontrado")
+    try:
+        result=reorder_print_files(project_id,[str(x) for x in payload.get("ids",[])])
+        persist_project(project_id)
+        return result
+    except Exception as e: raise HTTPException(400,str(e))
+
+@app.post("/api/projects/{project_id}/print-files/build")
+def build_project_print_file(project_id:str,req:PrintBuildRequest):
+    if not get_project(project_id): raise HTTPException(404,"Projeto não encontrado")
+    try:
+        mf=print_manifest(project_id)
+        result=build_print_pdf(project_id,mf.get("files",[]),req.model_dump())
+        persist_project(project_id)
+        return {"ok":True,"file":str(result),"filename":result.name}
+    except Exception as e: raise HTTPException(400,str(e))
+
+@app.get("/api/projects/{project_id}/print-files/download/{filename}")
+def download_project_print_file(project_id:str,filename:str):
+    if not get_project(project_id): raise HTTPException(404,"Projeto não encontrado")
+    path=project_dir(project_id)/"exports"/"print_ready"/Path(filename).name
+    if not path.exists(): raise HTTPException(404,"Arquivo não encontrado")
+    return FileResponse(path,media_type="application/pdf",filename=path.name)
 
 @app.get("/api/projects/{project_id}/tasks")
 def tasks(project_id:str): return list_tasks(project_id)
