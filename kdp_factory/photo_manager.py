@@ -60,6 +60,28 @@ async def upload_photos(project_id: str, files):
     return {"ok": True, "added": added, "count": len(data["photos"]), "limit": MAX_PHOTOS}
 
 
+def delete_photo(project_id: str, photo_id: str):
+    data = get_photo_manifest(project_id)
+    item = next((p for p in data["photos"] if p.get("id") == photo_id), None)
+    if not item:
+        raise ValueError("Foto não encontrada.")
+    root = project_dir(project_id)
+    for key in ("original", "prepared"):
+        rel = item.get(key)
+        if rel:
+            path = root / rel
+            if path.exists():
+                path.unlink()
+    data["photos"] = [p for p in data["photos"] if p.get("id") != photo_id]
+    data["interior"] = [x for x in data.get("interior", []) if x != photo_id]
+    data["ai_reference"] = [x for x in data.get("ai_reference", []) if x != photo_id]
+    if data.get("cover") == photo_id:
+        data["cover"] = None
+    if data.get("back_cover") == photo_id:
+        data["back_cover"] = None
+    _save(project_id, data)
+    return data
+
 def update_photo_roles(project_id: str, payload: dict):
     data = get_photo_manifest(project_id)
     valid = {p["id"] for p in data["photos"]}
