@@ -68,7 +68,10 @@ def run_stage(project_id, stage, model=None, author=""):
     spec = p.get("spec", {}) or {}
     ai_brief = str(spec.get("ai_brief") or "").strip()
     ai_script = str(spec.get("ai_script") or "").strip()
-    brief = "\n\n".join(x for x in [brief_base, "BRIEFING DO USUÁRIO:\n"+ai_brief if ai_brief else "", "SCRIPT/ESBOÇO DO USUÁRIO:\n"+ai_script if ai_script else ""] if x).strip()
+    photo_data = get_photo_manifest(project_id)
+    reference_names = [str(x.get("name","")) for x in photo_data.get("photos",[]) if x.get("id") in set(photo_data.get("ai_reference",[]))]
+    visual_context = ("REFERÊNCIAS VISUAIS DO USUÁRIO: " + ", ".join(reference_names) + "\nUse essas imagens como referências de personagens, ambiente, estilo e continuidade quando o provedor de IA suportar análise visual." if reference_names else "")
+    brief = "\n\n".join(x for x in [brief_base, "BRIEFING DO USUÁRIO:\n"+ai_brief if ai_brief else "", "SCRIPT/ESBOÇO DO USUÁRIO:\n"+ai_script if ai_script else "", visual_context] if x).strip()
     if stage == "brief":
         state = {"project_id": project_id, "subject": brief, "book_type": p.get("book_type"), "language": p.get("language"), "edition": p.get("edition"), "author": spec.get("author",""), "content_mode": spec.get("content_mode","text_and_images"), "resolution": spec.get("resolution","kdp_300dpi"), "publication_format": spec.get("publication_format","paperback"), "trim_size": spec.get("trim_size","6x9"), "print_mode": spec.get("print_mode","kdp")}
         checkpoint(project_id, "brief", state); update_project(project_id, status="brief", progress=10); return {"stage": stage, "status": "brief", "progress": 10, "state": state}
