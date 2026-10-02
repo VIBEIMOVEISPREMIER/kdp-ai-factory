@@ -212,7 +212,7 @@ def delete_project_endpoint(project_id:str):
             shutil.rmtree(root)
         with connect() as db:
             execute(db,"DELETE FROM projects WHERE id=?",(project_id,))
-            execute(db,"DELETE FROM kdp_factory_projects WHERE project_id=?",(project_id,))
+            if _USE_POSTGRES:\n                execute(db,"DELETE FROM kdp_factory_projects WHERE project_id=?",(project_id,))
         return {"ok":True,"project_id":project_id}
     except Exception as e:
         raise HTTPException(500,f"Não foi possível excluir o projeto: {e}")
@@ -267,6 +267,16 @@ async def upload_project_photos(project_id:str, files:list[UploadFile]=File(...)
         return result
     except ValueError as e: raise HTTPException(400,str(e))
     except Exception as e: raise HTTPException(500,str(e))
+
+@app.delete("/api/projects/{project_id}/photos/{photo_id}")
+def delete_project_photo(project_id:str, photo_id:str):
+    if not get_project(project_id): raise HTTPException(404,"Projeto não encontrado")
+    try:
+        from .photo_manager import delete_photo
+        result=delete_photo(project_id, photo_id)
+        persist_project(project_id)
+        return result
+    except ValueError as e: raise HTTPException(404,str(e))
 
 @app.patch("/api/projects/{project_id}/photos")
 def set_project_photo_roles(project_id:str,payload:dict):
