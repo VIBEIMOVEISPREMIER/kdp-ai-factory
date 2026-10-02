@@ -1,6 +1,6 @@
 ; KDP AI Factory Windows installer
 #define AppName "KDP AI Factory"
-#define AppVersion "1.0.0"
+#define AppVersion "1.1.1"
 #define AppExeName "KDP-AI-Factory-Windows.exe"
 
 [Setup]
