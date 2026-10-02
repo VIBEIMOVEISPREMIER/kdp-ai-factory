@@ -12,11 +12,11 @@ def parse_trim(trim:str)->tuple[float,float]:
 class LayoutEngine:
     def __init__(self,trim_size="8.5x11",bleed=False,margins=0.5):
         self.trim_size=trim_size; self.bleed=bleed; self.margins=margins
-    def pdf(self,chapters:list[dict[str,str]],output:Path,title="",author=""):
+    def pdf(self,chapters:list[dict[str,str]],output:Path,title="",author="",interior_images:list[str]|None=None):
         try:
             from reportlab.lib.pagesizes import portrait
             from reportlab.lib.units import inch
-            from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,PageBreak
+            from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,PageBreak,Image as RLImage
             from reportlab.lib.styles import getSampleStyleSheet
         except ImportError as e: raise RuntimeError("Instale reportlab.") from e
         w,h=parse_trim(self.trim_size); output.parent.mkdir(parents=True,exist_ok=True)
@@ -24,10 +24,17 @@ class LayoutEngine:
         styles=getSampleStyleSheet(); story=[]
         if title: story += [Paragraph(title,styles["Title"]),Spacer(1,30)]
         if author: story += [Paragraph(author,styles["Normal"]),PageBreak()]
-        for ch in chapters:
+        for i,ch in enumerate(chapters):
             story.append(Paragraph(ch.get("title",""),styles["Heading1"]))
             for para in re.split(r"\n\s*\n",ch.get("content","")):
                 if para.strip(): story += [Paragraph(para.replace("&","&amp;"),styles["BodyText"]),Spacer(1,8)]
-            story.append(PageBreak())
+            if interior_images and i < len(interior_images):
+                from PIL import Image as PILImage
+                iw,ih=PILImage.open(interior_images[i]).size
+                maxw=(w-2*self.margins)*inch; maxh=(h-2*self.margins)*inch
+                scale=min(maxw/iw,maxh/ih)
+                story += [Spacer(1,12),RLImage(interior_images[i],width=iw*scale,height=ih*scale),PageBreak()]
+            else:
+                story.append(PageBreak())
         doc.build(story)
         return output
