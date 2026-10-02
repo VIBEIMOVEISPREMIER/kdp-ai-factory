@@ -4,6 +4,25 @@ Open-source AI publishing factory for creating, editing, illustrating, formattin
 
 > Official edition: this repository contains the public application. The official distribution may use a one-book free trial and a lifetime license after the trial.
 
+## Download oficial
+
+**Versão pública atual: KDP AI Factory v1.1.0**
+
+> **Usuário final:** você não precisa escolher uma branch, entrar em Actions ou procurar um build. Use a página oficial de Releases abaixo.
+
+- **[Página oficial de downloads](https://github.com/VIBEIMOVEISPREMIER/kdp-ai-factory/releases/latest)**
+- **[Windows — instalador](https://github.com/VIBEIMOVEISPREMIER/kdp-ai-factory/releases/latest/download/KDP-AI-Factory-Setup.exe)**
+- **[Windows — executável portátil](https://github.com/VIBEIMOVEISPREMIER/kdp-ai-factory/releases/latest/download/KDP-AI-Factory-Windows.exe)**
+- **[Linux — pacote](https://github.com/VIBEIMOVEISPREMIER/kdp-ai-factory/releases/latest/download/KDP-AI-Factory-Linux-Installer.tar.gz)**
+
+### Qual arquivo devo baixar?
+
+- **Windows:** prefira o **instalador** `KDP-AI-Factory-Setup.exe`.
+- **Windows sem instalação:** use `KDP-AI-Factory-Windows.exe`.
+- **Linux:** use `KDP-AI-Factory-Linux-Installer.tar.gz`.
+
+As branches de desenvolvimento e versões antigas existem para histórico e manutenção. **Elas não são opções de download para o usuário final.**
+
 ## What it does
 
 The Factory is designed as a modular editorial workstation for children's books, fiction, educational books, workbooks, journals, planners, notebooks, cookbooks, poetry, coloring books and custom editorial projects. The selected book type is intended to drive the appropriate project settings, layout and export requirements.
