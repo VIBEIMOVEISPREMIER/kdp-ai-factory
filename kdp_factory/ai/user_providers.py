@@ -57,7 +57,7 @@ def upsert_provider(data: dict[str, Any]) -> dict[str, Any]:
     p=dict(data)
     p["id"]=str(p.get("id") or p.get("name") or "custom").strip().lower().replace(" ","-")
     items=[x for x in _load() if x.get("id") != p["id"]]
-    old=get_provider(p["id"])
+    old=next((x for x in items if x.get("id")==p["id"]), None)
     if old and not p.get("api_key"):
         p["api_key"]=old.get("api_key","")
     p.setdefault("kind","text")
@@ -137,7 +137,7 @@ class OpenAICompatibleTextProvider(TextProvider):
         # Retry briefly, then automatically try current fallback models.
         models_to_try=[selected_model]
         if self._is_gemini():
-            for fallback in ("gemini-3.5-flash-lite","gemini-3.8-flash","gemini-2.5-flash-lite"):
+            for fallback in ("gemini-3.8-flash","gemini-3.5-flash-lite","gemini-3.1-flash-lite","gemini-2.5-flash-lite"):
                 if fallback not in models_to_try:
                     models_to_try.append(fallback)
         last_error=None
