@@ -107,7 +107,7 @@ function BookSettings({author,setAuthor,contentMode,setContentMode,resolution,se
    <div><label>Script / roteiro detalhado</label><textarea value={aiScript} onChange={e=>setAiScript(e.target.value)} placeholder="Cole aqui seu roteiro, estrutura, capítulos, cenas ou instruções página a página."></textarea><small>Quando preenchido, o gerador deve tratar este texto como instrução do projeto.</small></div>
   </div>}
   {tab==="author"&&<div className="formCard">
-   <div><label>Autor / nome de publicação</label><input value={author} onChange={e=>setAuthor(e.target.value)} placeholder="Ex.: Rubens Jr / nome artístico"/></div>
+   <div><label>Autor / nome de publicação</label><input value={author} onChange={e=>setAuthor(e.target.value)} placeholder="Ex.: seu nome / nome artístico"/></div>
    <div><label>Uso do nome</label><p>Será usado na página de título, metadados e capa quando a etapa correspondente estiver configurada.</p></div>
   </div>}
  </div>
