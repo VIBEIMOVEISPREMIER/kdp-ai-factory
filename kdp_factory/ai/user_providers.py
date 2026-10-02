@@ -63,35 +63,82 @@ class OpenAICompatibleTextProvider(TextProvider):
     def __init__(self, config: dict[str,Any]):
         self.config=config
         self.name=config.get("name") or config.get("id") or "custom"
-    def _url(self):
+
+    def _is_gemini(self):
+        base=str(self.config.get("base_url","")).lower()
+        ep=str(self.config.get("endpoint","")).lower()
+        name=str(self.config.get("name","")).lower()
+        return "generativelanguage.googleapis.com" in base or "generatecontent" in ep or "gemini" in name
+
+    def _url(self, model=None):
         base=self.config.get("base_url","").rstrip("/")
         ep=self.config.get("endpoint","/v1/chat/completions")
+        model_name=model or self.config.get("model") or "gemini-2.5-flash"
+        if self._is_gemini():
+            if "{model}" in ep:
+                ep=ep.replace("{model}", model_name)
+            elif ":generateContent" not in ep:
+                ep=f"/v1beta/models/{model_name}:generateContent"
         return f"{base}/{ep.lstrip('/')}"
+
     def _headers(self):
         h={"Content-Type":"application/json"}
-        if self.config.get("api_key"): h["Authorization"]=f"Bearer {self.config['api_key']}"
+        if self.config.get("api_key"):
+            if self._is_gemini():
+                h["x-goog-api-key"]=self.config["api_key"]
+            else:
+                h["Authorization"]=f"Bearer {self.config['api_key']}"
         h.update(self.config.get("headers") or {})
         return h
+
     def models(self):
         m=self.config.get("model","")
         return [m] if m else []
+
     def available(self):
         return bool(self.config.get("api_key") and self.config.get("base_url"))
+
     def generate(self,prompt,model=None,**kwargs):
-        if not self.available(): raise RuntimeError(f"API {self.name} não está configurada.")
-        payload={"model":model or self.config.get("model"),"messages":[{"role":"user","content":prompt}]}
-        for k in ("temperature","top_p","max_tokens"):
-            if k in kwargs: payload[k]=kwargs[k]
-        r=httpx.post(self._url(),json=payload,headers=self._headers(),timeout=kwargs.get("timeout",300))
+        if not self.available():
+            raise RuntimeError(f"API {self.name} não está configurada.")
+
+        selected_model=model or self.config.get("model")
+        if self._is_gemini():
+            selected_model=selected_model or "gemini-2.5-flash"
+            payload={"contents":[{"role":"user","parts":[{"text":prompt}]}]}
+            generation_config={}
+            for source,target in (("temperature","temperature"),("top_p","topP"),("max_tokens","maxOutputTokens")):
+                if source in kwargs:
+                    generation_config[target]=kwargs[source]
+            if generation_config:
+                payload["generationConfig"]=generation_config
+        else:
+            payload={"model":selected_model,"messages":[{"role":"user","content":prompt}]}
+            for k in ("temperature","top_p","max_tokens"):
+                if k in kwargs: payload[k]=kwargs[k]
+
+        r=httpx.post(self._url(selected_model),json=payload,headers=self._headers(),timeout=kwargs.get("timeout",300))
         r.raise_for_status()
         d=r.json()
+
+        if self._is_gemini():
+            candidates=d.get("candidates") or []
+            if not candidates:
+                feedback=d.get("promptFeedback") or d.get("error") or "sem candidatos"
+                raise RuntimeError(f"{self.name} retornou uma resposta sem candidatos: {feedback}")
+            parts=((candidates[0].get("content") or {}).get("parts") or [])
+            content="".join(str(part.get("text","")) for part in parts if isinstance(part,dict))
+            if not content:
+                raise RuntimeError(f"{self.name} retornou uma resposta sem texto.")
+            return AIResponse(text=content,raw=d,model=d.get("modelVersion") or selected_model)
+
         choices=d.get("choices") or []
         if not choices: raise RuntimeError(f"{self.name} retornou uma resposta sem choices.")
         msg=choices[0].get("message") or {}
         content=msg.get("content","")
         if isinstance(content,list):
             content="".join(x.get("text","") if isinstance(x,dict) else str(x) for x in content)
-        return AIResponse(text=str(content),raw=d,model=d.get("model") or model or self.config.get("model",""))
+        return AIResponse(text=str(content),raw=d,model=d.get("model") or selected_model or "")
 
 class UserImageAPIProvider(ImageProvider):
     def __init__(self,config):
