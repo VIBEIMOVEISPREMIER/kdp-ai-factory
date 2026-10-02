@@ -11,6 +11,8 @@ permissions:
 
 jobs:
   windows:
+    env:
+      KDP_FACTORY_LOCAL_MODE: "1"
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -92,6 +94,8 @@ jobs:
             dist/installer/KDP-AI-Factory-Setup.exe
 
   linux:
+    env:
+      KDP_FACTORY_LOCAL_MODE: "1"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
