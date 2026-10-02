@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kdp-ai-factory"
-version = "1.0.0"
+version = "1.1.1"
 description = "Local-first AI publishing factory for creating, formatting, validating and preparing books for Amazon KDP."
 requires-python = ">=3.11"
 dependencies = [
