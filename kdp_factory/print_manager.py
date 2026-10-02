@@ -154,6 +154,20 @@ def add_files(project_id: str, uploads: Iterable, filenames: list[str]) -> dict:
     save_manifest(project_id, data)
     return data
 
+def remove_file(project_id: str, file_id: str) -> dict:
+    data = manifest(project_id)
+    items = data.get("files", [])
+    item = next((x for x in items if x.get("id") == file_id), None)
+    if not item:
+        raise ValueError("Arquivo não encontrado.")
+    root = Path(__import__("kdp_factory.projects", fromlist=["project_dir"]).project_dir(project_id))
+    path = root / str(item.get("path", ""))
+    if path.exists(): path.unlink()
+    data["files"] = [x for x in items if x.get("id") != file_id]
+    for n, x in enumerate(data["files"]): x["order"] = n
+    save_manifest(project_id, data)
+    return data
+
 def reorder(project_id: str, ids: list[str]) -> dict:
     data = manifest(project_id)
     by_id = {x["id"]: x for x in data.get("files", [])}
