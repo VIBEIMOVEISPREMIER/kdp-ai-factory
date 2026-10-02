@@ -1,4 +1,4 @@
-from fastapi import FastAPI,HTTPException
+from fastapi import FastAPI,HTTPException,UploadFile,File,Form
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel,Field
 from pathlib import Path
@@ -21,6 +21,7 @@ from .ai.remote_config import load as load_remote_config, save as save_remote_co
 from .ai.user_providers import list_providers as list_ai_providers, upsert_provider as upsert_ai_provider, remove_provider as remove_ai_provider
 from .web_persistence import restore_projects, persist_project, persistence_status
 from .config import LICENSE_SERVER_URL
+from .photo_manager import upload_photos, get_photo_manifest, update_photo_roles
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
 class ProjectCreate(BaseModel): name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR";subject:str="";edition:str="print"
 class TextRequest(BaseModel): prompt:str=Field(min_length=1);model:str|None=None
@@ -195,6 +196,30 @@ def patch_project(project_id:str,payload:dict):
  p=update_project(project_id,**payload)
  if not p:raise HTTPException(404,"Projeto não encontrado")
  return p
+@app.get("/api/projects/{project_id}/photos")
+def project_photos(project_id:str):
+    if not get_project(project_id): raise HTTPException(404,"Projeto não encontrado")
+    return get_photo_manifest(project_id)
+
+@app.post("/api/projects/{project_id}/photos")
+async def upload_project_photos(project_id:str, files:list[UploadFile]=File(...)):
+    if not get_project(project_id): raise HTTPException(404,"Projeto não encontrado")
+    try:
+        result=await upload_photos(project_id, files)
+        persist_project(project_id)
+        return result
+    except ValueError as e: raise HTTPException(400,str(e))
+    except Exception as e: raise HTTPException(500,str(e))
+
+@app.patch("/api/projects/{project_id}/photos")
+def set_project_photo_roles(project_id:str,payload:dict):
+    if not get_project(project_id): raise HTTPException(404,"Projeto não encontrado")
+    try:
+        result=update_photo_roles(project_id,payload)
+        persist_project(project_id)
+        return result
+    except ValueError as e: raise HTTPException(400,str(e))
+
 @app.get("/api/projects/{project_id}/tasks")
 def tasks(project_id:str): return list_tasks(project_id)
 @app.post("/api/projects/{project_id}/tasks")
