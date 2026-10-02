@@ -29,10 +29,18 @@ def persist_project(project_id: str) -> None:
         return
 
     buffer = io.BytesIO()
+    # Neon is the metadata persistence layer, not a large-file store.
+    # Keep the project state recoverable but never copy uploaded/generated
+    # binaries (PDFs, images, exports) into the database archive.
+    excluded_roots={"imports","images","exports","cover"}
     with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for path in root.rglob("*"):
-            if path.is_file() and not path.name.endswith(".tmp"):
-                zf.write(path, path.relative_to(root).as_posix())
+            if not path.is_file() or path.name.endswith(".tmp"):
+                continue
+            rel=path.relative_to(root)
+            if rel.parts and rel.parts[0] in excluded_roots:
+                continue
+            zf.write(path, rel.as_posix())
 
     with connect() as db:
         execute(
