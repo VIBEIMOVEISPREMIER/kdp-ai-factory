@@ -105,7 +105,7 @@ class OpenAICompatibleTextProvider(TextProvider):
             if self._is_gemini():
                 h["x-goog-api-key"]=self.config["api_key"]
             else:
-                h["Authorization"]=f"Bearer {self.config["api_key"]}"
+                h["Authorization"]=f"Bearer {self.config['api_key']}"
         h.update(self.config.get("headers") or {})
         return h
 
