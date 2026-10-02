@@ -25,7 +25,7 @@ from .config import LICENSE_SERVER_URL
 from .photo_manager import upload_photos, get_photo_manifest, update_photo_roles
 from .print_manager import add_files as add_print_files, manifest as print_manifest, reorder as reorder_print_files, remove_file as remove_print_file, set_role as set_print_role, build_print_pdf
 app=FastAPI(title="KDP AI Factory",version="1.0.0")
-class ProjectCreate(BaseModel): name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR";subject:str="";edition:str="print";author:str="";content_mode:str="text_and_images";resolution:str="kdp_300dpi";publication_format:str="paperback";print_mode:str="kdp";cover_mode:str="images_only";ai_brief:str="";ai_script:str="";trim_size:str="6x9"
+class ProjectCreate(BaseModel): name:str=Field(min_length=1,max_length=200);book_type:str="custom";language:str="pt-BR";subject:str="";edition:str="print";author:str="";content_mode:str="text_and_images";resolution:str="kdp_300dpi";publication_format:str="paperback";print_mode:str="kdp";cover_mode:str="images_only";ai_brief:str="";ai_script:str="";trim_size:str="6x9";print_settings:dict={}
 class TextRequest(BaseModel): prompt:str=Field(min_length=1);model:str|None=None
 class ImportRequest(BaseModel): path:str
 class ValidateRequest(BaseModel): spec:dict;pdf_path:str|None=None
@@ -192,7 +192,7 @@ def payment_license(payload:PaymentRequest):
  except Exception as e:raise HTTPException(400,str(e))
 @app.post("/api/projects")
 def new_project(payload:ProjectCreate):
- try:return create_project(payload.name,payload.book_type,payload.language,subject=payload.subject,edition=payload.edition,author=payload.author,content_mode=payload.content_mode,resolution=payload.resolution,publication_format=payload.publication_format,print_mode=payload.print_mode,ai_brief=payload.ai_brief,ai_script=payload.ai_script,trim_size=payload.trim_size)
+ try:return create_project(payload.name,payload.book_type,payload.language,subject=payload.subject,edition=payload.edition,author=payload.author,content_mode=payload.content_mode,resolution=payload.resolution,publication_format=payload.publication_format,print_mode=payload.print_mode,ai_brief=payload.ai_brief,ai_script=payload.ai_script,trim_size=payload.trim_size,print_settings=payload.print_settings)
  except PermissionError as e:raise HTTPException(402,str(e))
 @app.patch("/api/projects/{project_id}")
 def patch_project(project_id:str,payload:dict):
