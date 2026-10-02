@@ -10,7 +10,8 @@ const stages=["brief","outline","manuscript","revision","assets","layout","cover
 
 export default function App(){
  const [projects,setProjects]=useState<Project[]>([]),[name,setName]=useState(""),[type,setType]=useState("childrens"),[language,setLanguage]=useState("pt-BR"),[subject,setSubject]=useState(""),[edition,setEdition]=useState("print"),[loading,setLoading]=useState(false),[view,setView]=useState("home"),[system,setSystem]=useState<any>(null),[license,setLicense]=useState<any>(null),[selected,setSelected]=useState<Project|null>(null),[aiPrompt,setAiPrompt]=useState(""),[aiResult,setAiResult]=useState("");
- const [sessionRecovered,setSessionRecovered]=useState(false);\n const [photoDraft,setPhotoDraft]=useState<File[]>([]),[photoCover,setPhotoCover]=useState<string|null>(null),[photoBack,setPhotoBack]=useState<string|null>(null),[photoInterior,setPhotoInterior]=useState<string[]>([]);
+ const [sessionRecovered,setSessionRecovered]=useState(false);
+ const [photoDraft,setPhotoDraft]=useState<File[]>([]),[photoCover,setPhotoCover]=useState<string|null>(null),[photoBack,setPhotoBack]=useState<string|null>(null),[photoInterior,setPhotoInterior]=useState<string[]>([]);
 
  async function load(){
   try{
