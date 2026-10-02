@@ -3,7 +3,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel,Field
 from pathlib import Path
-from .db import init_db
+from .db import init_db, connect, execute, _USE_POSTGRES
 from .projects import create_project,list_projects,get_project,update_project,checkpoint,project_dir
 from .doctor import run_doctor
 from .jobs import list_tasks,create_task,update_task
