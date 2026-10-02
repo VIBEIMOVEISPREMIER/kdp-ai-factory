@@ -64,9 +64,13 @@ def run_stage(project_id, stage, model=None, author=""):
     p = get_project(project_id)
     if not p: raise ValueError("Projeto não encontrado.")
     stage = str(stage).strip().lower()
-    brief = str(p.get("spec", {}).get("subject") or p.get("name") or "").strip()
+    brief_base = str(p.get("spec", {}).get("subject") or p.get("name") or "").strip()
+    spec = p.get("spec", {}) or {}
+    ai_brief = str(spec.get("ai_brief") or "").strip()
+    ai_script = str(spec.get("ai_script") or "").strip()
+    brief = "\n\n".join(x for x in [brief_base, "BRIEFING DO USUÁRIO:\n"+ai_brief if ai_brief else "", "SCRIPT/ESBOÇO DO USUÁRIO:\n"+ai_script if ai_script else ""] if x).strip()
     if stage == "brief":
-        state = {"project_id": project_id, "subject": brief, "book_type": p.get("book_type"), "language": p.get("language"), "edition": p.get("edition")}
+        state = {"project_id": project_id, "subject": brief, "book_type": p.get("book_type"), "language": p.get("language"), "edition": p.get("edition"), "author": spec.get("author",""), "content_mode": spec.get("content_mode","text_and_images"), "resolution": spec.get("resolution","kdp_300dpi"), "publication_format": spec.get("publication_format","paperback"), "trim_size": spec.get("trim_size","6x9"), "print_mode": spec.get("print_mode","kdp")}
         checkpoint(project_id, "brief", state); update_project(project_id, status="brief", progress=10); return {"stage": stage, "status": "brief", "progress": 10, "state": state}
     if stage == "outline": return generate_outline(project_id, brief, 10, model)
     if stage == "manuscript":
