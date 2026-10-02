@@ -10,7 +10,11 @@ from .db import connect, execute
 
 
 def enabled() -> bool:
-    return bool(os.getenv("DATABASE_URL", "").strip())
+    # Desktop builds are strictly local-first: project archives, images, PDFs
+    # and exports must never be copied to Neon. The web deployment can still
+    # enable DATABASE_URL normally.
+    local_mode = os.getenv("KDP_FACTORY_LOCAL_MODE", "").strip().lower() in {"1", "true", "yes", "on"}
+    return bool(os.getenv("DATABASE_URL", "").strip()) and not local_mode
 
 
 def persistence_status() -> dict:
