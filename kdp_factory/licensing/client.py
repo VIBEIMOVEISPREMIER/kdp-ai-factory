@@ -1,5 +1,5 @@
 from __future__ import annotations
-import base64,json,secrets,re
+import base64,hashlib,json,secrets,re
 from datetime import datetime,timezone
 from typing import Any
 import httpx
