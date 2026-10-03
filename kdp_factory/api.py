@@ -1,4 +1,5 @@
-from fastapi import FastAPI,HTTPException,UploadFile,File,Form
+import re,secrets
+from fastapi import FastAPI,HTTPException,UploadFile,File,Form,Request,Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel,Field
@@ -14,7 +15,7 @@ from .kdp.validator import KDPValidator
 from .models.manager import ModelManager
 from .export.engine import ExportEngine
 from .bookflow import generate_outline,generate_manuscript,metadata,export_project,generate_cover,run_stage
-from .licensing.client import status as license_status,activate_with_license,create_payment_intent,verify_payment_and_issue_license
+from .licensing.client import status as license_status,activate_with_license,create_payment_intent,verify_payment_and_issue_license,web_license_status,activate_web_license,create_web_payment_intent,verify_web_payment_and_issue_license
 from .licensing.models import LicenseActivationRequest
 from .hardware import as_dict as hardware_profile
 from .ai.image_providers import list_providers, upsert_provider, generate as generate_image_api
@@ -173,23 +174,37 @@ def project(project_id:str):
  p=get_project(project_id)
  if not p: raise HTTPException(404,"Projeto não encontrado")
  return p
+def _web_user_id(request: Request, response: Response):
+ uid=str(request.cookies.get("kdp_web_user_id","")).strip().lower()
+ if not re.fullmatch(r"usr_[0-9a-f]{32}",uid):
+  uid="usr_"+secrets.token_hex(16)
+  response.set_cookie("kdp_web_user_id",uid,max_age=31536000,httponly=True,samesite="lax",secure=(request.url.scheme=="https"),path="/")
+ return uid
+
 @app.get("/api/license")
-def license(): return license_status()
+def license(request: Request,response: Response):
+ uid=_web_user_id(request,response)
+ try:return web_license_status(uid)
+ except Exception:
+  return {"licensed":False,"user_id":uid,"machine_id":"","free_books_remaining":0,"license_server_configured":bool(LICENSE_SERVER_URL)}
 
 @app.get("/api/affiliate/config")
 def affiliate_config():
     return {"url": LICENSE_SERVER_URL + "/affiliate", "api_base": LICENSE_SERVER_URL}
 @app.post("/api/license/activate")
-def activate_license(payload:LicenseActivationRequest):
- try:return activate_with_license(payload.license_token)
+def activate_license(payload:LicenseActivationRequest,request:Request,response:Response):
+ uid=_web_user_id(request,response)
+ try:return activate_web_license(payload.license_token,uid)
  except Exception as e:raise HTTPException(400,str(e))
 @app.post("/api/license/payment-intent")
-def payment_intent(payload:PaymentIntentRequest):
- try:return create_payment_intent(payload.asset)
+def payment_intent(payload:PaymentIntentRequest,request:Request,response:Response):
+ uid=_web_user_id(request,response)
+ try:return create_web_payment_intent(payload.asset,uid)
  except Exception as e:raise HTTPException(400,str(e))
 @app.post("/api/license/payment")
-def payment_license(payload:PaymentRequest):
- try:return verify_payment_and_issue_license(payload.tx_id,payload.asset,referral_code=payload.referral_code.strip(),intent_id=payload.intent_id,intent_secret=payload.intent_secret)
+def payment_license(payload:PaymentRequest,request:Request,response:Response):
+ uid=_web_user_id(request,response)
+ try:return verify_web_payment_and_issue_license(payload.tx_id,payload.asset,uid,referral_code=payload.referral_code.strip(),intent_id=payload.intent_id,intent_secret=payload.intent_secret)
  except Exception as e:raise HTTPException(400,str(e))
 @app.post("/api/projects")
 def new_project(payload:ProjectCreate):
