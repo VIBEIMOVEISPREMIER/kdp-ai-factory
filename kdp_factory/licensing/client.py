@@ -47,7 +47,19 @@ def server_bootstrap(fingerprint_hash: str = ""):
 
 def status():
  state=_read_state()
- return {"licensed":bool(state.get("licensed")),"user_id":_user_id(),"books_created":int(state.get("books_created",0)),"free_books_remaining":0 if state.get("licensed") else max(0,FREE_BOOK_LIMIT-int(state.get("books_created",0))),"license_server_configured":bool(LICENSE_SERVER_URL),"machine_id":machine_id()}
+ bootstrap=server_bootstrap()
+ if bootstrap:
+  if bootstrap.get("user_id"):
+   state["user_id"]=str(bootstrap["user_id"]).strip().lower()
+  if bootstrap.get("machine_id"):
+   state["machine_id"]=str(bootstrap["machine_id"]).strip().lower()
+  lic=bootstrap.get("license") or {}
+  if "licensed" in lic:
+   state["licensed"]=bool(lic.get("licensed"))
+  state["bootstrap_at"]=_now()
+  _write_state(state)
+ uid=str(state.get("user_id") or _user_id()).strip().lower()
+ return {"licensed":bool(state.get("licensed")),"user_id":uid,"books_created":int(state.get("books_created",0)),"free_books_remaining":0 if state.get("licensed") else max(0,FREE_BOOK_LIMIT-int(state.get("books_created",0))),"license_server_configured":bool(LICENSE_SERVER_URL),"machine_id":machine_id()}
 def assert_can_create_book(project_id=None):
  state=_read_state()
  if state.get("licensed"):return
