@@ -15,7 +15,7 @@ from .kdp.validator import KDPValidator
 from .models.manager import ModelManager
 from .export.engine import ExportEngine
 from .bookflow import generate_outline,generate_manuscript,metadata,export_project,generate_cover,run_stage
-from .licensing.client import status as license_status,activate_with_license,create_payment_intent,verify_payment_and_issue_license,web_license_status,activate_web_license,create_web_payment_intent,verify_web_payment_and_issue_license
+from .licensing.client import status as license_status,activate_with_license,create_payment_intent,verify_payment_and_issue_license,web_license_status,activate_web_license,create_web_payment_intent,verify_web_payment_and_issue_license,web_identity
 from .licensing.models import LicenseActivationRequest
 from .hardware import as_dict as hardware_profile
 from .ai.image_providers import list_providers, upsert_provider, generate as generate_image_api
@@ -369,8 +369,15 @@ def payment_license(payload:PaymentRequest,request:Request,response:Response):
  try:return verify_web_payment_and_issue_license(payload.tx_id,payload.asset,uid,referral_code=payload.referral_code.strip(),intent_id=payload.intent_id,intent_secret=payload.intent_secret)
  except Exception as e:raise HTTPException(400,str(e))
 @app.post("/api/projects")
-def new_project(payload:ProjectCreate):
- try:return create_project(payload.name,payload.book_type,payload.language,subject=payload.subject,edition=payload.edition,author=payload.author,content_mode=payload.content_mode,resolution=payload.resolution,publication_format=payload.publication_format,print_mode=payload.print_mode,ai_brief=payload.ai_brief,ai_script=payload.ai_script,trim_size=payload.trim_size,print_settings=payload.print_settings)
+def new_project(payload:ProjectCreate,request:Request,response:Response):
+ try:
+  host=(request.url.hostname or "").lower()
+  web_mode=host not in {"localhost","127.0.0.1","0.0.0.0"}
+  trial_machine_id=None
+  if web_mode:
+   uid=_web_user_id(request,response)
+   trial_machine_id=web_identity(uid)
+  return create_project(payload.name,payload.book_type,payload.language,subject=payload.subject,edition=payload.edition,author=payload.author,content_mode=payload.content_mode,resolution=payload.resolution,publication_format=payload.publication_format,print_mode=payload.print_mode,ai_brief=payload.ai_brief,ai_script=payload.ai_script,trim_size=payload.trim_size,print_settings=payload.print_settings,trial_machine_id=trial_machine_id)
  except PermissionError as e:raise HTTPException(402,str(e))
 @app.patch("/api/projects/{project_id}")
 def patch_project(project_id:str,payload:dict):
