@@ -328,6 +328,7 @@ function PrintStudio({project,onBack}:{project:Project|null;onBack:()=>void}){
  </section>;
 }
 function AffiliatePanel(){
+ const [base,setBase]=useState("");
  const [dash,setDash]=useState<any>(null),[mode,setMode]=useState<"login"|"register">("login"),[form,setForm]=useState({name:"",email:"",wallet:"",pin:"",phone:"",pix_cpf:"",payout_method:"crypto",country_code:"",country_calling_code:""}),[msg,setMsg]=useState("");
  useEffect(()=>{fetch(API+"/api/affiliate/config").then(r=>r.json()).then(d=>setBase(d.api_base||"")).catch(()=>{});fetch(API+"/api/affiliate/geo").then(r=>r.json()).then(g=>setForm(x=>({...x,country_code:g.country_code||"",country_calling_code:g.country_calling_code||"",phone:x.phone||g.country_calling_code||"+"}))).catch(()=>{});load()},[]);
  async function call(path:string,options:any={}){
