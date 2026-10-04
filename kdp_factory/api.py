@@ -1,4 +1,4 @@
-import re,secrets,ipaddress,urllib.request,json
+import re,secrets,ipaddress,urllib.request,json,httpx
 from fastapi import FastAPI,HTTPException,UploadFile,File,Form,Request,Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -242,6 +242,8 @@ def _web_user_id(request: Request, response: Response):
 
 @app.get("/api/license")
 def license(request: Request,response: Response):
+ response.headers["Cache-Control"]="no-store, no-cache, must-revalidate"
+ response.headers["Pragma"]="no-cache"
  uid=_web_user_id(request,response)
  try:return web_license_status(uid)
  except Exception:
@@ -250,6 +252,96 @@ def license(request: Request,response: Response):
 @app.get("/api/affiliate/config")
 def affiliate_config():
     return {"url": LICENSE_SERVER_URL + "/affiliate", "api_base": LICENSE_SERVER_URL}
+
+def _affiliate_proxy_headers(request: Request) -> dict:
+    token = str(request.cookies.get("kdp_affiliate_session") or "").strip()
+    return {"Authorization": "Bearer " + token} if token else {}
+
+def _affiliate_proxy_response(response: Response, upstream: httpx.Response):
+    try:
+        data = upstream.json()
+    except Exception:
+        data = {"detail": upstream.text[:1000] or "Servidor de afiliados indisponível."}
+    response.status_code = upstream.status_code
+    return data
+
+@app.post("/api/affiliate/register")
+async def affiliate_register_proxy(request: Request):
+    try:
+        body = await request.json()
+        r = httpx.post(LICENSE_SERVER_URL + "/affiliate/register", json=body, timeout=15)
+        if r.status_code >= 400:
+            try: detail = r.json().get("detail","Falha no cadastro.")
+            except Exception: detail = "Falha no cadastro."
+            raise HTTPException(r.status_code, detail)
+        return r.json()
+    except HTTPException: raise
+    except Exception as e:
+        raise HTTPException(502, "Servidor de afiliados indisponível.") from e
+
+@app.post("/api/affiliate/login")
+async def affiliate_login_proxy(request: Request, response: Response):
+    try:
+        body = await request.json()
+        r = httpx.post(LICENSE_SERVER_URL + "/affiliate/login", json=body, timeout=15)
+        try: data = r.json()
+        except Exception: data = {"detail":"Resposta inválida do servidor de afiliados."}
+        if r.status_code >= 400:
+            raise HTTPException(r.status_code, data.get("detail","Falha no login."))
+        token = str(data.get("session_token") or "").strip()
+        if not token:
+            raise HTTPException(502, "O servidor de afiliados não retornou uma sessão.")
+        response.set_cookie("kdp_affiliate_session", token, max_age=28800, httponly=True, secure=(request.url.scheme=="https"), samesite="lax", path="/")
+        data.pop("session_token", None)
+        return data
+    except HTTPException: raise
+    except Exception as e:
+        raise HTTPException(502, "Servidor de afiliados indisponível.") from e
+
+@app.get("/api/affiliate/me")
+def affiliate_me_proxy(request: Request):
+    try:
+        r = httpx.get(LICENSE_SERVER_URL + "/affiliate/api/me", headers=_affiliate_proxy_headers(request), timeout=15)
+        if r.status_code >= 400:
+            try: detail = r.json().get("detail","Não autenticado.")
+            except Exception: detail = "Não autenticado."
+            raise HTTPException(r.status_code, detail)
+        return r.json()
+    except HTTPException: raise
+    except Exception as e:
+        raise HTTPException(502, "Servidor de afiliados indisponível.") from e
+
+@app.post("/api/affiliate/profile")
+async def affiliate_profile_proxy(request: Request):
+    try:
+        body = await request.json()
+        r = httpx.post(LICENSE_SERVER_URL + "/affiliate/api/profile", json=body, headers=_affiliate_proxy_headers(request), timeout=15)
+        try: data = r.json()
+        except Exception: data = {"detail":"Resposta inválida do servidor de afiliados."}
+        if r.status_code >= 400: raise HTTPException(r.status_code, data.get("detail","Falha ao atualizar perfil."))
+        return data
+    except HTTPException: raise
+    except Exception as e:
+        raise HTTPException(502, "Servidor de afiliados indisponível.") from e
+
+@app.post("/api/affiliate/pin")
+async def affiliate_pin_proxy(request: Request):
+    try:
+        body = await request.json()
+        r = httpx.post(LICENSE_SERVER_URL + "/affiliate/api/pin", json=body, headers=_affiliate_proxy_headers(request), timeout=15)
+        try: data = r.json()
+        except Exception: data = {"detail":"Resposta inválida do servidor de afiliados."}
+        if r.status_code >= 400: raise HTTPException(r.status_code, data.get("detail","Falha ao alterar PIN."))
+        return data
+    except HTTPException: raise
+    except Exception as e:
+        raise HTTPException(502, "Servidor de afiliados indisponível.") from e
+
+@app.post("/api/affiliate/logout")
+def affiliate_logout(response: Response):
+    response.delete_cookie("kdp_affiliate_session", path="/")
+    return {"ok": True}
+
 @app.get("/api/affiliate/geo")
 def affiliate_geo(request: Request):
     raw=request.headers.get("x-forwarded-for","").split(",")[0].strip()
