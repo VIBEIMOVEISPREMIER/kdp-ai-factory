@@ -220,8 +220,10 @@ class UserVideoAPIProvider:
         headers={"Content-Type":"application/json","Authorization":f"Bearer {self.config['api_key']}"}
         payload={"prompt":prompt}
         if self.config.get("model"): payload["model"]=self.config["model"]
-        for k in ("duration","aspect_ratio","resolution","negative_prompt"):
+        for k in ("duration","aspect_ratio","resolution","negative_prompt","language","social_network","publish_type"):
             if k in kwargs and kwargs[k] is not None: payload[k]=kwargs[k]
+        if kwargs.get("input_media"):
+            payload["input_media"]=kwargs["input_media"]
         payload.update(self.config.get("extra_body") or {})
         r=httpx.post(url,json=payload,headers=headers,timeout=kwargs.get("timeout",1800))
         r.raise_for_status()
