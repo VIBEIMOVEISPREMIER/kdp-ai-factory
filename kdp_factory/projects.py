@@ -35,8 +35,9 @@ def create_project(name: str, book_type: str, language: str, **overrides):
     ensure_dirs()
     pid = str(uuid4())
 
-    # In official mode the remote licensing service is authoritative for trial use.
-    assert_can_create_book(pid)
+    # In web mode, the caller passes a stable trial machine derived from the browser User ID.
+    trial_machine_id = overrides.pop("trial_machine_id", None)
+    assert_can_create_book(pid, trial_machine_id=trial_machine_id)
 
     stamp = now()
     folder = project_dir(pid)
@@ -68,7 +69,8 @@ def create_project(name: str, book_type: str, language: str, **overrides):
             (pid, name, book_type, language, stamp, stamp),
         )
 
-    register_book_created()
+    if not trial_machine_id:
+        register_book_created()
     persist_project(pid)
     return manifest
 
