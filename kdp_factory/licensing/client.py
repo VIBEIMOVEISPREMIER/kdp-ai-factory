@@ -84,7 +84,7 @@ def create_web_payment_intent(asset,user_id):
  uid=str(user_id or "").strip().lower(); mid=web_identity(uid)
  if not LICENSE_SERVER_URL: raise RuntimeError("Servidor de licenças não configurado.")
  r=httpx.post(f"{LICENSE_SERVER_URL}/v1/payment/create-intent",json={"machine_id":mid,"user_id":uid,"asset":asset.upper().strip()},timeout=30)
- r.raise_for_status(); return r.json()
+ r.raise_for_status(); data=r.json(); data.setdefault("user_id",uid); data.setdefault("machine_id",mid); return data
 
 def verify_web_payment_and_issue_license(tx_id,asset,user_id,referral_code="",intent_id=None,intent_secret=None):
  uid=str(user_id or "").strip().lower(); mid=web_identity(uid)
