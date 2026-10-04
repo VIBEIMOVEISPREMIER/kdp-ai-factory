@@ -90,10 +90,12 @@ export default function App(){
   <button className={view==="new"?"active":""} onClick={()=>setView("new")}><Plus/>Novo livro</button>
   <button className={view==="workspace"?"active":""} onClick={()=>setView(selected?"workspace":"projects")}><BookOpen/>Produção</button>
   <button className={view==="video"?"active":""} onClick={()=>setView("video")}><Video/>Vídeos sociais</button>
+  <button className={view==="buy"?"active":""} onClick={()=>setView("buy")}><Sparkles/>Comprar licença</button>
+  <button className={view==="guide"?"active":""} onClick={()=>setView("guide")}><BookOpen/>Orientação passo a passo</button>
   <button className={view==="affiliate"?"active":""} onClick={()=>setView("affiliate")}><Users/>Afiliados</button><button className={view==="print"?"active":""} onClick={()=>setView(selected?"print":"projects")}><Printer/>Impressão</button>
   <button className={view==="system"?"active":""} onClick={()=>setView("system")}><Activity/>Sistema / IA</button>
  </nav><div className="sideBottom"><div className="miniStatus"><span className="dot"/>{system?"Sistema online":"Conectando..."}<br/><small>Cloud-first • projetos salvos automaticamente</small></div><button onClick={()=>setView("system")}><Settings/>Configurações</button></div></aside>
- <main><header><div><span className="eyebrow">CLOUD-FIRST • WINDOWS + LINUX + WEB</span><h1>{view==="new"?"Criar novo livro":view==="projects"?"Meus projetos":view==="workspace"?"Área de produção":view==="video"?"Vídeos para redes sociais":view==="affiliate"?"Programa de afiliados":view==="print"?"Preparar para impressão":view==="system"?"Sistema e modelos":"Sua fábrica editorial com IA"}</h1></div><button className="outline" onClick={()=>setView("new")}><Plus/> Novo projeto</button></header>
+ <main><header><div><span className="eyebrow">CLOUD-FIRST • WINDOWS + LINUX + WEB</span><h1>{view==="new"?"Criar novo livro":view==="projects"?"Meus projetos":view==="workspace"?"Área de produção":view==="video"?"Vídeos para redes sociais":view==="affiliate"?"Programa de afiliados":view==="buy"?"Comprar licença vitalícia":view==="guide"?"Orientação passo a passo":view==="print"?"Preparar para impressão":view==="system"?"Sistema e modelos":"Sua fábrica editorial com IA"}</h1></div><button className="outline" onClick={()=>setView("new")}><Plus/> Novo projeto</button></header>
  {sessionRecovered&&view==="home"&&<div className="recover"><RefreshCw size={18}/><div><b>Sessão recuperada</b><span>O último projeto aberto continua salvo: {selected?.name}</span></div><button className="primary small" onClick={()=>setView("workspace")}>Continuar</button></div>}
  {view==="home"&&<><section className="hero"><div><div className="pill"><Cloud/> IA remota • PC leve</div><h2>Transforme uma ideia em um <em>livro completo.</em></h2><p>Escreva, ilustre, diagrama, valide e prepare seus livros para KDP. As APIs ficam salvas no aplicativo e a IA pesada pode rodar na nuvem.</p><button className="primary" onClick={()=>setView("new")}>Começar um livro <ChevronRight/></button><div style={{marginTop:12,fontSize:13}}>{license?.licensed?"Licença vitalícia ativa":"Teste: "+(license?.free_books_remaining??1)+" livro gratuito disponível"}</div></div><div className="heroArt"><BookOpen size={110}/><Sparkles className="spark s1"/><Video className="spark s2"/></div></section>
  <section className="grid"><Feature icon={<Brain/>} title="Várias IAs" text="Cadastre quantos provedores quiser, inclusive APIs que fazem texto + imagem."/><Feature icon={<ImageIcon/>} title="Imagens" text="APIs externas, engine remoto ou geração local como fallback."/><Feature icon={<Video/>} title="Vídeo social" text="Gere vídeos promocionais a partir do livro criado."/><Feature icon={<ShieldCheck/>} title="Persistência" text="Projetos, APIs e checkpoints ficam salvos no computador."/></section>
@@ -103,6 +105,8 @@ export default function App(){
  {view==="workspace"&&<Workspace project={selected} onBack={()=>setView("projects")} onProjectUpdate={async(id)=>{try{const r=await fetch(API+"/api/projects/"+id);if(r.ok){const p=await r.json();setSelected(p);setProjects(xs=>xs.map(x=>x.id===p.id?p:x))}}catch{}}} aiPrompt={aiPrompt} setAiPrompt={setAiPrompt} aiResult={aiResult} generate={generate} goVideo={()=>setView("video")} goPrint={()=>setView(selected?"print":"projects")}/>}
  {view==="video"&&<VideoStudio projects={projects} project={selected} onSelect={p=>setSelected(p)} onBack={()=>setView(selected?"workspace":"projects")} onConfigure={()=>setView("system")}/>}
  {view==="affiliate"&&<AffiliatePanel/>}
+ {view==="buy"&&<LicensePurchase license={license} onDone={load}/>} 
+ {view==="guide"&&<Guide onBuy={()=>setView("buy")} />}
  {view==="print"&&<PrintStudio project={selected} onBack={()=>setView(selected?"workspace":"projects")}/>}
  {view==="system"&&<System system={system} license={license} onActivated={load}/>}
  </main></div>
@@ -367,6 +371,41 @@ function System({system,license,onActivated}:{system:any;license:any;onActivated
  <div className="formCard"><div><b>Ativar licença existente</b><p>Cole o token recebido do servidor oficial.</p><div style={{display:"flex",alignItems:"center",gap:8,margin:"4px 0 10px",fontSize:12,color:"var(--muted)"}}><span>ID do usuário: <b style={{fontFamily:"ui-monospace,monospace"}}>{license?.user_id||"gerando..."}</b></span><button className="outline small" type="button" onClick={()=>{if(license?.user_id)navigator.clipboard?.writeText(license.user_id)}} title="Copiar ID do usuário"><Copy size={13}/></button></div><input value={token} onChange={e=>setToken(e.target.value)} placeholder="KDP1...."/><small style={{display:"block",marginTop:7}}>Esse ID identifica esta instalação no servidor oficial. Informe-o ao administrador caso precise de uma nova chave.</small></div><button className="primary" disabled={!token.trim()} onClick={activate}>Ativar licença</button></div>
  <div className="formCard"><div><b>Comprar licença vitalícia — US$50</b><p>Pagamento em BNB ou USDT na BNB Smart Chain.</p>{intent&&<p><b>Valor exato deste pedido: {intent.expected_amount} {asset}</b><br/><small>Esse valor é exclusivo do seu pedido. O TXID público, sozinho, não libera a licença.</small></p>}<input value={tx} onChange={e=>setTx(e.target.value)} placeholder="TXID da transação"/><input value={referral} onChange={e=>{setReferral(e.target.value.toUpperCase());localStorage.setItem("kdp:referralCode",e.target.value.toUpperCase())}} placeholder="Código do afiliado (opcional)"/><select value={asset} onChange={e=>{setAsset(e.target.value);setTx("");}}><option>USDT</option><option>BNB</option></select></div><button className="primary" disabled={!tx.trim()||!intent} onClick={pay}>Verificar pagamento</button></div>
  {msg&&<div className="resultBox">{msg}</div>}</section>
+}
+
+
+function LicensePurchase({license,onDone}:{license:any;onDone:()=>void}){
+ const [asset,setAsset]=useState("USDT"),[intent,setIntent]=useState<any>(null),[tx,setTx]=useState(""),[referral,setReferral]=useState(localStorage.getItem("kdp:referralCode")||""),[msg,setMsg]=useState(""),[busy,setBusy]=useState(false);
+ async function createIntent(a:string){
+  setBusy(true);setMsg("Gerando pedido protegido...");
+  try{const r=await fetch(API+"/api/license/payment-intent",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({asset:a,user_id:license?.user_id||""})});const d=await r.json();if(!r.ok)throw new Error(apiDetail(d.detail,"Não foi possível criar o pedido."));setIntent(d);setMsg("Pedido criado. Envie exatamente o valor abaixo na BNB Smart Chain.");}
+  catch(e){setIntent(null);setMsg(e instanceof Error?e.message:"Falha ao criar pedido.");}finally{setBusy(false)}
+ }
+ useEffect(()=>{createIntent(asset)},[asset]);
+ async function pay(){
+  if(!intent||!tx.trim())return;setBusy(true);setMsg("Validando pagamento e vinculando ao seu ID de usuário...");
+  try{const r=await fetch(API+"/api/license/payment",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tx_id:tx.trim(),asset,referral_code:referral,intent_id:intent.intent_id,intent_secret:intent.intent_secret,user_id:license?.user_id||""})});const d=await r.json();if(!r.ok)throw new Error(apiDetail(d.detail,"Pagamento não validado."));setMsg("Pagamento confirmado. Licença vitalícia emitida e vinculada ao seu ID de usuário.");setTx("");setIntent(null);await onDone();}
+  catch(e){setMsg(e instanceof Error?e.message:"Pagamento não validado.");}finally{setBusy(false)}
+ }
+ return <section className="page"><div className="sectionTitle"><div><h3>Comprar licença vitalícia — US$50</h3><p>Pagamento em BNB ou USDT na BNB Smart Chain.</p></div></div>
+ <div className="formCard"><div><b>ID do usuário deste pedido</b><div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}><code>{license?.user_id||"gerando..."}</code><button className="outline small" onClick={()=>license?.user_id&&navigator.clipboard?.writeText(license.user_id)}><Copy size={13}/> Copiar</button></div><small>Este ID é enviado junto ao pedido e usado pelo servidor para vincular o pagamento à conta/instalação correta.</small></div></div>
+ <div className="formCard"><div><label>Moeda</label><select value={asset} onChange={e=>{setAsset(e.target.value);setTx("")}}><option>USDT</option><option>BNB</option></select>{intent&&<div className="resultBox"><b>Valor exato deste pedido: {intent.expected_amount} {asset}</b><br/><small>Envie somente na BNB Smart Chain. O TXID sozinho não libera a licença.</small>{intent.payment_address&&<><br/><small>Endereço de pagamento: <code>{intent.payment_address}</code></small></>}</div>}<label>TXID da transação</label><input value={tx} onChange={e=>setTx(e.target.value)} placeholder="Cole o TXID aqui"/><label>Código do afiliado (opcional)</label><input value={referral} onChange={e=>{setReferral(e.target.value.toUpperCase());localStorage.setItem("kdp:referralCode",e.target.value.toUpperCase())}} placeholder="Código do afiliado"/></div><button className="primary" disabled={!tx.trim()||!intent||busy} onClick={pay}>{busy?"Processando...":"Verificar pagamento e liberar licença"}</button></div>
+ {msg&&<div className="resultBox">{msg}</div>}
+ </section>
+}
+function Guide({onBuy}:{onBuy:()=>void}){
+ const steps=[
+  ["1. Criar seu primeiro livro","Use o primeiro livro gratuito para testar o fluxo completo. Preencha título, tipo, idioma, autor e formato. Esse primeiro livro é liberado para você conhecer o sistema."],
+  ["2. Gerar e revisar","Configure suas APIs de IA, gere o conteúdo, revise o manuscrito, imagens, capa e metadados antes da exportação."],
+  ["3. Preparar para impressão","Use a aba Impressão para preparar arquivos KDP ou impressão independente. A cota gratuita é do primeiro livro; serviços auxiliares não devem exigir a criação de um segundo livro."],
+  ["4. Gerar vídeo para redes sociais","Entre em Vídeos sociais, escolha um projeto ou use mídia externa, selecione idioma, rede, formato e gere/edite o roteiro antes de enviar à sua API de vídeo."],
+  ["5. Publicar na Amazon KDP","No KDP, crie o título, confira detalhes, envie manuscrito e capa, execute o Previewer/Quality Check e depois configure direitos e preço antes de publicar. A Amazon confirma que o fluxo inclui Details → Content → Rights & Pricing."],
+  ["6. Licença vitalícia","Depois do teste, abra Comprar licença, copie seu ID de usuário, escolha USDT ou BNB na BNB Smart Chain, gere o pedido, envie exatamente o valor indicado e cole o TXID. O pagamento fica vinculado ao seu ID e a licença é emitida após a validação."]
+ ];
+ return <section className="page"><div className="sectionTitle"><div><h3>Como usar o KDP AI Factory</h3><p>Guia rápido do primeiro projeto até vídeo e publicação na Amazon KDP.</p></div><button className="primary" onClick={onBuy}>Comprar licença vitalícia</button></div>
+ <div className="grid">{steps.map(([title,text])=><div className="feature" key={title}><CheckCircle2/><div><b>{title}</b><p>{text}</p></div></div>)}</div>
+ <div className="formCard"><h3>Checklist antes de publicar</h3><p>Confira título, subtítulo, autor, idioma, descrição, categorias, palavras-chave, manuscrito, capa, ISBN quando aplicável, tamanho/bleed para impressão e preço. A KDP recomenda revisar o Previewer antes do envio final. citeturn0search1turn0search4</p><p>Para paperback/hardcover, a KDP exige manuscrito e capa e disponibiliza o Print Previewer para verificar o arquivo antes da publicação. citeturn0search0turn0search6</p></div>
+ </section>
 }
 
 function Feature({icon,title,text}:{icon:any;title:string;text:string}){return <div className="feature">{icon}<div><b>{title}</b><p>{text}</p></div></div>}
