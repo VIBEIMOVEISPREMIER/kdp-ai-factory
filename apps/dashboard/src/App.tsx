@@ -413,7 +413,7 @@ function Guide({onBuy}:{onBuy:()=>void}){
  ];
  return <section className="page"><div className="sectionTitle"><div><h3>Como usar o KDP AI Factory</h3><p>Guia rápido do primeiro projeto até vídeo e publicação na Amazon KDP.</p></div><button className="primary" onClick={onBuy}>Comprar licença vitalícia</button></div>
  <div className="grid">{steps.map(([title,text])=><div className="feature" key={title}><CheckCircle2/><div><b>{title}</b><p>{text}</p></div></div>)}</div>
- <div className="formCard"><h3>Checklist antes de publicar</h3><p>Confira título, subtítulo, autor, idioma, descrição, categorias, palavras-chave, manuscrito, capa, ISBN quando aplicável, tamanho/bleed para impressão e preço. A KDP recomenda revisar o Previewer antes do envio final. citeturn0search1turn0search4</p><p>Para paperback/hardcover, a KDP exige manuscrito e capa e disponibiliza o Print Previewer para verificar o arquivo antes da publicação. citeturn0search0turn0search6</p></div>
+ <div className="formCard"><h3>Checklist antes de publicar</h3><p>Confira título, subtítulo, autor, idioma, descrição, categorias, palavras-chave, manuscrito, capa, ISBN quando aplicável, tamanho/bleed para impressão e preço. A KDP recomenda revisar o Previewer antes do envio final.</p><p>Para paperback/hardcover, a KDP exige manuscrito e capa e disponibiliza o Print Previewer para verificar o arquivo antes da publicação.</p></div>
  </section>
 }
 
