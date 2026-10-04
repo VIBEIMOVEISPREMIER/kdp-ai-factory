@@ -1,4 +1,4 @@
-import re,secrets
+import re,secrets,ipaddress,urllib.request,json
 from fastapi import FastAPI,HTTPException,UploadFile,File,Form,Request,Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -250,6 +250,17 @@ def license(request: Request,response: Response):
 @app.get("/api/affiliate/config")
 def affiliate_config():
     return {"url": LICENSE_SERVER_URL + "/affiliate", "api_base": LICENSE_SERVER_URL}
+@app.get("/api/affiliate/geo")
+def affiliate_geo(request: Request):
+    raw=request.headers.get("x-forwarded-for","").split(",")[0].strip()
+    if not raw and request.client: raw=request.client.host
+    try:
+        ip=str(ipaddress.ip_address(raw))
+        req=urllib.request.Request("https://ipapi.co/"+ip+"/json/",headers={"User-Agent":"KDP-AI-Factory/1.0"})
+        with urllib.request.urlopen(req,timeout=4) as resp: data=json.loads(resp.read().decode("utf-8"))
+        return {"country_code":str(data.get("country_code") or "").upper(),"country_calling_code":str(data.get("country_calling_code") or "+")}
+    except Exception:
+        return {"country_code":"","country_calling_code":"+"}
 @app.post("/api/license/activate")
 def activate_license(payload:LicenseActivationRequest,request:Request,response:Response):
  uid=_web_user_id(request,response)
