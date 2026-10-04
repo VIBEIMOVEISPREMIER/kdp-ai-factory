@@ -161,6 +161,22 @@ def generate_video_script(payload:dict):
         raise HTTPException(502,str(e))
 
 
+@app.post("/api/video-external")
+def generate_external_video(payload:dict):
+    provider_id=str(payload.get("provider_id","")).strip()
+    prompt=str(payload.get("prompt","")).strip()
+    if not prompt: raise HTTPException(400,"Informe o roteiro ou gere um roteiro automático.")
+    cfg=__import__("kdp_factory.ai.user_providers",fromlist=["get_provider"]).get_provider(provider_id)
+    if not cfg or cfg.get("kind") not in ("video","all"): raise HTTPException(400,"Selecione uma API de vídeo cadastrada.")
+    try:
+        from .ai.user_providers import UserVideoAPIProvider
+        result=UserVideoAPIProvider(cfg).generate(prompt,duration=payload.get("duration"),aspect_ratio=payload.get("aspect_ratio","9:16"),resolution=payload.get("resolution"),input_media=payload.get("input_media") or [],language=payload.get("language"),social_network=payload.get("social_network"),publish_type=payload.get("publish_type"))
+        draft_id=str(payload.get("draft_id") or "vd_"+secrets.token_urlsafe(12))
+        root=VIDEO_ASSET_ROOT/draft_id
+        root.mkdir(parents=True,exist_ok=True)
+        (root/"result.json").write_text(__import__("json").dumps(result,ensure_ascii=False,indent=2),encoding="utf-8")
+        return {"ok":True,"provider":cfg.get("name"),"result":result,"draft_id":draft_id,"saved":str(root/"result.json")}
+    except Exception as e: raise HTTPException(502,str(e))
 @app.post("/api/projects/{project_id}/video")
 def generate_project_video(project_id:str,payload:dict):
     project=get_project(project_id)
