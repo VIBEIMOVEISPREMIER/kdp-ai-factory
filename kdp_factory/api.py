@@ -338,7 +338,13 @@ async def affiliate_pin_proxy(request: Request):
         raise HTTPException(502, "Servidor de afiliados indisponível.") from e
 
 @app.post("/api/affiliate/logout")
-def affiliate_logout(response: Response):
+def affiliate_logout(request: Request, response: Response):
+    try:
+        token = str(request.cookies.get("kdp_affiliate_session") or "").strip()
+        headers = {"Authorization": "Bearer " + token} if token else {}
+        httpx.post(LICENSE_SERVER_URL + "/affiliate/logout", headers=headers, timeout=10)
+    except Exception:
+        pass
     response.delete_cookie("kdp_affiliate_session", path="/")
     return {"ok": True}
 
