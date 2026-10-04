@@ -118,6 +118,49 @@ def test_ai_provider(payload:dict):
 def video_providers():
     return [p for p in list_ai_providers() if p.get("kind") in ("video","all")]
 
+VIDEO_ASSET_ROOT=Path("data/video_assets")
+VIDEO_ASSET_ROOT.mkdir(parents=True,exist_ok=True)
+
+@app.post("/api/video-assets")
+async def upload_video_assets(files:list[UploadFile]=File(...)):
+    draft_id="vd_"+secrets.token_urlsafe(12)
+    root=VIDEO_ASSET_ROOT/draft_id
+    root.mkdir(parents=True,exist_ok=True)
+    items=[]
+    for f in files[:100]:
+        name=Path(f.filename or "arquivo").name
+        if not name: continue
+        target=root/(secrets.token_hex(6)+"_"+name)
+        data=await f.read()
+        if len(data)>100*1024*1024: raise HTTPException(413,"Cada arquivo de vídeo/mídia deve ter no máximo 100 MB.")
+        target.write_bytes(data)
+        items.append({"name":name,"path":str(target.relative_to(VIDEO_ASSET_ROOT)),"url":"/api/video-assets/"+draft_id+"/"+target.name})
+    return {"draft_id":draft_id,"assets":items}
+
+@app.get("/api/video-assets/{draft_id}/{filename}")
+def get_video_asset(draft_id:str,filename:str):
+    root=(VIDEO_ASSET_ROOT/draft_id).resolve()
+    path=(root/Path(filename).name).resolve()
+    if root not in path.parents or not path.exists(): raise HTTPException(404,"Mídia não encontrada.")
+    return FileResponse(path)
+
+@app.post("/api/video-script")
+def generate_video_script(payload:dict):
+    language=str(payload.get("language") or "pt-BR")
+    project_name=str(payload.get("project_name") or "projeto")
+    brief=str(payload.get("brief") or "")
+    network=str(payload.get("network") or "social")
+    prompt=("Crie um roteiro completo para um vídeo promocional realista para "+network+"\n"
+             "Idioma: "+language+"\nProjeto: "+project_name+"\nContexto: "+brief+"\n"
+             "Inclua narração, falas de uma pessoa quando fizer sentido, cenas, ações, textos na tela, ritmo, transições e chamada para ação. "
+             "Não invente características do produto que não estejam no contexto. Entregue um roteiro pronto para uma API de geração de vídeo.")
+    try:
+        result=registry.router.text(prompt, model=payload.get("model"))
+        return {"ok":True,"script":result.text,"model":result.model}
+    except Exception as e:
+        raise HTTPException(502,str(e))
+
+
 @app.post("/api/projects/{project_id}/video")
 def generate_project_video(project_id:str,payload:dict):
     project=get_project(project_id)
@@ -132,7 +175,7 @@ def generate_project_video(project_id:str,payload:dict):
         cfg=get_provider(provider_id) if provider_id else None
         if not cfg or cfg.get("kind") not in ("video","all"):
             raise HTTPException(400,"Selecione uma API de vídeo cadastrada.")
-        result=UserVideoAPIProvider(cfg).generate(prompt, duration=payload.get("duration"), aspect_ratio=payload.get("aspect_ratio","9:16"), resolution=payload.get("resolution"))
+        result=UserVideoAPIProvider(cfg).generate(prompt, duration=payload.get("duration"), aspect_ratio=payload.get("aspect_ratio","9:16"), resolution=payload.get("resolution"), input_media=payload.get("input_media") or [], language=payload.get("language"), social_network=payload.get("social_network"), publish_type=payload.get("publish_type"))
         out=project_dir(project_id)/"exports"/"social_video_result.json"
         out.write_text(__import__("json").dumps(result,ensure_ascii=False,indent=2),encoding="utf-8")
         checkpoint(project_id,"social_video",{"provider":cfg.get("name"),"prompt":prompt,"result_file":str(out)})
