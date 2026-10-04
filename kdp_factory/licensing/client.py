@@ -96,7 +96,19 @@ def verify_web_payment_and_issue_license(tx_id,asset,user_id,referral_code="",in
  _decode_license(data["license_token"], expected_machine=mid)
  return data
 
-def assert_can_create_book(project_id=None):
+def assert_can_create_book(project_id=None, trial_machine_id=None):
+ # Desktop uses its physical machine. Web uses a deterministic machine ID derived
+ # from the persistent browser User ID, so Render's own machine is never shared
+ # between customers.
+ if trial_machine_id:
+  if not LICENSE_SERVER_URL or not project_id:
+   raise RuntimeError("Não foi possível validar o período gratuito no servidor oficial.")
+  try:
+   r=httpx.post(f"{LICENSE_SERVER_URL}/v1/trial/consume",json={"machine_id":trial_machine_id,"project_id":project_id},timeout=10);r.raise_for_status();d=r.json()
+   if not d.get("allowed"):raise PermissionError(d.get("reason","O período gratuito já foi utilizado."))
+   return
+  except PermissionError:raise
+  except httpx.HTTPError as e:raise RuntimeError("Não foi possível validar o período gratuito no servidor oficial.") from e
  state=_read_state()
  if state.get("licensed"):return
  if int(state.get("books_created",0))>=FREE_BOOK_LIMIT:raise PermissionError("O período gratuito de 1 livro já foi utilizado. Ative a licença vitalícia para continuar.")
